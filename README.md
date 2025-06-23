@@ -2,7 +2,7 @@
 
 A modern, full-featured online nursery e-commerce platform built with Next.js, MongoDB, and integrated with Stripe payments and ImageBB for image hosting. Perfect for plant retailers looking to establish a professional online presence.
 
-![Green Haven Nursery](https://green-haven-nursary.vercel.app/)
+[Green Haven Nursery](https://green-haven-nursary.vercel.app/)
 
 ## 🚀 Features Overview
 
