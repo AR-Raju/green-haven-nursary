@@ -6,6 +6,7 @@ import { useDispatch, useSelector } from "react-redux";
 import ProductCard from "./ProductCard";
 
 interface ProductListProps {
+  viewMode?: "grid" | "list";
   filters?: {
     category?: string;
     search?: string;
@@ -17,6 +18,7 @@ interface ProductListProps {
 }
 
 export default function ProductList({
+  viewMode = "grid",
   filters = {},
   page = 1,
   limit = 12,
@@ -62,7 +64,7 @@ export default function ProductList({
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
       {products.map((product) => (
         <ProductCard key={product._id} product={product} />
       ))}
