@@ -3,6 +3,7 @@
 import type React from "react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -12,13 +13,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -26,20 +25,22 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
+import { cn } from "@/lib/utils";
 import {
   BarChart3,
   Bell,
+  FileText,
+  FolderOpen,
   Heart,
   Home,
+  LayoutDashboard,
   Leaf,
   LogOut,
+  Menu,
   MessageSquare,
   Package,
-  Search,
   Settings,
   ShoppingCart,
-  Star,
-  Store,
   Truck,
   User,
   Users,
@@ -54,9 +55,9 @@ interface DashboardLayoutProps {
 }
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
+  const [user, setUser] = useState<any>(null);
   const router = useRouter();
   const pathname = usePathname();
-  const [user, setUser] = useState<any | null>(null);
 
   useEffect(() => {
     const userData = localStorage.getItem("user");
@@ -73,54 +74,92 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     router.push("/");
   };
 
+  const menuItems = [
+    {
+      title: "Dashboard",
+      icon: LayoutDashboard,
+      href: "/dashboard",
+      roles: ["user", "vendor", "admin"],
+    },
+    {
+      title: "Orders",
+      icon: ShoppingCart,
+      href: "/dashboard/orders",
+      roles: ["user", "vendor", "admin"],
+    },
+    {
+      title: "Wishlist",
+      icon: Heart,
+      href: "/dashboard/wishlist",
+      roles: ["user"],
+    },
+    {
+      title: "Products",
+      icon: Package,
+      href: "/dashboard/products",
+      roles: ["vendor", "admin"],
+    },
+    {
+      title: "Categories",
+      icon: FolderOpen,
+      href: "/dashboard/categories",
+      roles: ["admin", "vendor"],
+    },
+    {
+      title: "Reviews",
+      icon: MessageSquare,
+      href: "/dashboard/reviews",
+      roles: ["admin", "vendor"],
+    },
+    {
+      title: "Blog",
+      icon: FileText,
+      href: "/dashboard/blog",
+      roles: ["admin", "vendor"],
+    },
+    {
+      title: "Users",
+      icon: Users,
+      href: "/dashboard/users",
+      roles: ["admin"],
+    },
+    {
+      title: "Analytics",
+      icon: BarChart3,
+      href: "/dashboard/analytics",
+      roles: ["vendor", "admin"],
+    },
+    {
+      title: "Shipping",
+      icon: Truck,
+      href: "/dashboard/shipping",
+      roles: ["admin"],
+    },
+    {
+      title: "Settings",
+      icon: Settings,
+      href: "/dashboard/settings",
+      roles: ["user", "vendor", "admin"],
+    },
+  ];
+
+  const filteredMenuItems = menuItems.filter(
+    (item) => user && item.roles.includes(user.role)
+  );
+
   if (!user) {
-    return <div>Loading...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+      </div>
+    );
   }
-
-  const getUserMenuItems = () => {
-    const baseItems = [
-      { icon: Home, label: "Dashboard", href: "/dashboard" },
-      { icon: ShoppingCart, label: "My Orders", href: "/dashboard/orders" },
-      { icon: Heart, label: "Wishlist", href: "/dashboard/wishlist" },
-      { icon: User, label: "Profile", href: "/dashboard/profile" },
-      { icon: Settings, label: "Settings", href: "/dashboard/settings" },
-    ];
-
-    if (user.role === "admin") {
-      return [
-        { icon: Home, label: "Dashboard", href: "/dashboard" },
-        { icon: Package, label: "All Products", href: "/dashboard/products" },
-        { icon: ShoppingCart, label: "Orders", href: "/dashboard/orders" },
-        { icon: Users, label: "Users", href: "/dashboard/users" },
-        { icon: BarChart3, label: "Analytics", href: "/dashboard/analytics" },
-        { icon: Store, label: "Categories", href: "/dashboard/categories" },
-        { icon: MessageSquare, label: "Reviews", href: "/dashboard/reviews" },
-        { icon: Settings, label: "Settings", href: "/dashboard/settings" },
-      ];
-    }
-
-    if (user.role === "vendor") {
-      return [
-        { icon: Home, label: "Dashboard", href: "/dashboard" },
-        { icon: Package, label: "My Products", href: "/dashboard/products" },
-        { icon: ShoppingCart, label: "Orders", href: "/dashboard/orders" },
-        { icon: BarChart3, label: "Analytics", href: "/dashboard/analytics" },
-        { icon: Star, label: "Reviews", href: "/dashboard/reviews" },
-        { icon: Truck, label: "Shipping", href: "/dashboard/shipping" },
-        { icon: Settings, label: "Settings", href: "/dashboard/settings" },
-      ];
-    }
-
-    return baseItems;
-  };
-
-  const menuItems = getUserMenuItems();
 
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
-        {/* Sidebar */}
-        <Sidebar className="border-r">
+        {/* Desktop Sidebar */}
+        <Sidebar className="hidden lg:flex">
           <SidebarHeader className="border-b p-4">
             <Link href="/" className="flex items-center space-x-2">
               <div className="bg-green-600 p-2 rounded-lg">
@@ -135,44 +174,42 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             </Link>
           </SidebarHeader>
 
-          <SidebarContent>
-            <SidebarGroup>
-              <SidebarGroupLabel>
-                {user.role === "admin"
-                  ? "Admin Panel"
-                  : user.role === "vendor"
-                  ? "Vendor Panel"
-                  : "My Account"}
-              </SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {menuItems.map((item) => (
-                    <SidebarMenuItem key={item.href}>
-                      <SidebarMenuButton
-                        asChild
-                        isActive={pathname === item.href}
-                      >
-                        <Link href={item.href}>
-                          <item.icon className="h-4 w-4" />
-                          <span>{item.label}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
+          <SidebarContent className="p-4">
+            <SidebarMenu>
+              {filteredMenuItems.map((item) => (
+                <SidebarMenuItem key={item.href}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname === item.href}
+                    className={cn(
+                      "w-full justify-start",
+                      pathname === item.href &&
+                        "bg-green-100 text-green-700 hover:bg-green-100"
+                    )}
+                  >
+                    <Link href={item.href}>
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
           </SidebarContent>
 
           <SidebarFooter className="border-t p-4">
             <div className="flex items-center space-x-3">
               <Avatar className="h-8 w-8">
                 <AvatarImage src="/placeholder.svg?height=32&width=32" />
-                <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                <AvatarFallback className="text-xs">
+                  {user.name?.charAt(0)}
+                </AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">{user.name}</p>
-                <p className="text-xs text-gray-500 capitalize">{user.role}</p>
+                <Badge variant="outline" className="text-xs capitalize">
+                  {user.role}
+                </Badge>
               </div>
             </div>
           </SidebarFooter>
@@ -181,49 +218,131 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         {/* Main Content */}
         <div className="flex-1 flex flex-col">
           {/* Top Navigation */}
-          <header className="border-b bg-white px-6 py-4">
+          <header className="bg-white border-b px-4 py-3 lg:px-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
-                <SidebarTrigger />
-                <div>
+                {/* Mobile Menu Trigger */}
+                <Sheet>
+                  <SheetTrigger asChild>
+                    <Button variant="ghost" size="sm" className="lg:hidden">
+                      <Menu className="h-5 w-5" />
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent side="left" className="w-64 p-0">
+                    <div className="flex flex-col h-full">
+                      <div className="border-b p-4">
+                        <Link href="/" className="flex items-center space-x-2">
+                          <div className="bg-green-600 p-2 rounded-lg">
+                            <Leaf className="h-5 w-5 text-white" />
+                          </div>
+                          <div>
+                            <span className="text-lg font-bold text-green-600">
+                              Green Haven
+                            </span>
+                            <p className="text-xs text-gray-500">Dashboard</p>
+                          </div>
+                        </Link>
+                      </div>
+
+                      <div className="flex-1 p-4">
+                        <nav className="space-y-2">
+                          {filteredMenuItems.map((item) => (
+                            <Link
+                              key={item.href}
+                              href={item.href}
+                              className={cn(
+                                "flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                                pathname === item.href
+                                  ? "bg-green-100 text-green-700"
+                                  : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                              )}
+                            >
+                              <item.icon className="h-4 w-4" />
+                              <span>{item.title}</span>
+                            </Link>
+                          ))}
+                        </nav>
+                      </div>
+
+                      <div className="border-t p-4">
+                        <div className="flex items-center space-x-3">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src="/placeholder.svg?height=32&width=32" />
+                            <AvatarFallback className="text-xs">
+                              {user.name?.charAt(0)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">
+                              {user.name}
+                            </p>
+                            <Badge
+                              variant="outline"
+                              className="text-xs capitalize"
+                            >
+                              {user.role}
+                            </Badge>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </SheetContent>
+                </Sheet>
+
+                <SidebarTrigger className="hidden lg:flex" />
+
+                <div className="hidden lg:block">
                   <h1 className="text-xl font-semibold">
-                    {pathname === "/dashboard"
-                      ? "Dashboard"
-                      : pathname
-                          .split("/")
-                          .pop()
-                          ?.replace("-", " ")
-                          .replace(/\b\w/g, (l) => l.toUpperCase())}
+                    {pathname === "/dashboard" && "Dashboard"}
+                    {pathname === "/dashboard/orders" && "Orders"}
+                    {pathname === "/dashboard/wishlist" && "Wishlist"}
+                    {pathname === "/dashboard/products" && "Products"}
+                    {pathname === "/dashboard/categories" && "Categories"}
+                    {pathname === "/dashboard/reviews" && "Reviews"}
+                    {pathname === "/dashboard/blog" && "Blog"}
+                    {pathname === "/dashboard/users" && "Users"}
+                    {pathname === "/dashboard/analytics" && "Analytics"}
+                    {pathname === "/dashboard/shipping" && "Shipping"}
+                    {pathname === "/dashboard/settings" && "Settings"}
+                    {pathname === "/dashboard/profile" && "Profile"}
                   </h1>
-                  <p className="text-sm text-gray-500">
-                    Welcome back, {user.name}
-                  </p>
                 </div>
               </div>
 
               <div className="flex items-center space-x-4">
-                <Button variant="ghost" size="sm">
-                  <Search className="h-4 w-4" />
-                </Button>
+                {/* Notifications */}
                 <Button variant="ghost" size="sm" className="relative">
                   <Bell className="h-4 w-4" />
-                  <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full text-xs"></span>
+                  <Badge
+                    variant="destructive"
+                    className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 text-xs"
+                  >
+                    3
+                  </Badge>
                 </Button>
 
+                {/* Back to Store */}
+                <Link href="/">
+                  <Button variant="outline" size="sm">
+                    <Home className="h-4 w-4 mr-2" />
+                    Store
+                  </Button>
+                </Link>
+
+                {/* User Menu */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      className="relative h-8 w-8 rounded-full"
-                    >
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src="/placeholder.svg?height=32&width=32" />
-                        <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                    <Button variant="ghost" size="sm" className="relative">
+                      <Avatar className="h-6 w-6">
+                        <AvatarImage src="/placeholder.svg?height=24&width=24" />
+                        <AvatarFallback className="text-xs">
+                          {user.name?.charAt(0)}
+                        </AvatarFallback>
                       </Avatar>
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-56" align="end" forceMount>
-                    <DropdownMenuLabel className="font-normal">
+                  <DropdownMenuContent className="w-56" align="end">
+                    <DropdownMenuLabel>
                       <div className="flex flex-col space-y-1">
                         <p className="text-sm font-medium leading-none">
                           {user.name}
@@ -231,6 +350,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                         <p className="text-xs leading-none text-muted-foreground">
                           {user.email}
                         </p>
+                        <Badge
+                          variant="outline"
+                          className="w-fit text-xs capitalize"
+                        >
+                          {user.role}
+                        </Badge>
                       </div>
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
@@ -247,6 +372,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link href="/">
+                        <Home className="mr-2 h-4 w-4" />
+                        <span>Back to Store</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleLogout}>
                       <LogOut className="mr-2 h-4 w-4" />
                       <span>Log out</span>
@@ -258,7 +390,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           </header>
 
           {/* Page Content */}
-          <main className="flex-1 p-6 bg-gray-50">{children}</main>
+          <main className="flex-1 p-4 lg:p-6 bg-gray-50">{children}</main>
         </div>
       </div>
     </SidebarProvider>
