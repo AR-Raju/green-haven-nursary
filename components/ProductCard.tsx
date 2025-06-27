@@ -43,9 +43,9 @@ export default function ProductCard({ product }: ProductCardProps) {
 
   return (
     <Link href={`/products/${product._id}`}>
-      <Card className="group cursor-pointer transition-all duration-200 hover:shadow-lg">
-        <CardContent className="p-4">
-          <div className="relative aspect-square overflow-hidden">
+      <Card className="group cursor-pointer transition-all duration-200 hover:shadow-lg w-60">
+        <CardContent className="p-3">
+          <div className="relative aspect-[4/3] overflow-hidden rounded-md">
             <Image
               src={product.image || "/placeholder.svg"}
               alt={product.title}
@@ -53,58 +53,66 @@ export default function ProductCard({ product }: ProductCardProps) {
               className="object-cover transition-transform duration-200 group-hover:scale-105"
             />
             {!product.inStock && (
-              <Badge variant="destructive" className="absolute top-2 left-2">
+              <Badge
+                variant="destructive"
+                className="absolute top-1 left-1 text-xs"
+              >
                 Out of Stock
               </Badge>
             )}
             {product.inStock && product.quantity < 10 && (
-              <Badge variant="secondary" className="absolute top-2 left-2">
+              <Badge
+                variant="secondary"
+                className="absolute top-1 left-1 text-xs"
+              >
                 Low Stock
               </Badge>
             )}
           </div>
 
-          <div className="py-4">
-            <h3 className="font-semibold text-lg mb-2 line-clamp-2">
+          <div className="py-2">
+            <h3 className="font-semibold text-sm mb-1 line-clamp-2">
               {product.title}
             </h3>
-            <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
+            <p className="text-xs text-muted-foreground mb-1 line-clamp-2">
               {product.description}
             </p>
 
-            <div className="flex items-center gap-1 mb-2">
+            <div className="flex items-center gap-1 mb-1">
               {[...Array(5)].map((_, i) => (
                 <Star
                   key={i}
-                  className={`h-4 w-4 ${
+                  className={`h-3 w-3 ${
                     i < Math.floor(product.rating)
                       ? "fill-yellow-400 text-yellow-400"
                       : "text-gray-300"
                   }`}
                 />
               ))}
-              <span className="text-sm text-muted-foreground ml-1">
+              <span className="text-xs text-muted-foreground ml-1">
                 ({product.rating.toFixed(1)})
               </span>
             </div>
 
             <div className="flex items-center justify-between">
-              <span className="text-2xl font-bold text-primary">
+              <span className="text-lg font-bold text-primary">
                 ${product.price.toFixed(2)}
               </span>
-              <Badge variant="outline">{product.category.name}</Badge>
+              <Badge variant="outline" className="text-xs">
+                {product.category.name}
+              </Badge>
             </div>
           </div>
         </CardContent>
 
-        <CardFooter className="p-4 pt-0">
+        <CardFooter className="p-3 pt-0">
           <Button
             onClick={handleAddToCart}
             disabled={!product.inStock}
-            className="w-full"
+            className="w-full h-8 text-sm"
             variant={product.inStock ? "default" : "secondary"}
           >
-            <ShoppingCart className="h-4 w-4 mr-2" />
+            <ShoppingCart className="h-3 w-3 mr-1" />
             {product.inStock ? "Add to Cart" : "Out of Stock"}
           </Button>
         </CardFooter>
