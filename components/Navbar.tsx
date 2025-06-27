@@ -2,8 +2,17 @@
 
 import type React from "react";
 
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import {
   NavigationMenu,
@@ -20,23 +29,30 @@ import { fetchCategories } from "@/redux/slices/categoriesSlice";
 import type { AppDispatch, RootState } from "@/redux/store";
 import {
   Heart,
+  LayoutDashboard,
   Leaf,
+  LogOut,
   Mail,
   MapPin,
   Menu,
   Phone,
   Search,
+  Settings,
   ShoppingCart,
   User,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { toast } from "sonner";
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [user, setUser] = useState<any>(null);
+  const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
   const { totalItems } = useSelector((state: RootState) => state.cart);
   const { categories } = useSelector((state: RootState) => state.categories);
@@ -44,6 +60,12 @@ export default function Navbar() {
   useEffect(() => {
     dispatch(initializeCart());
     dispatch(fetchCategories());
+
+    // Check for logged in user
+    const userData = localStorage.getItem("user");
+    if (userData) {
+      setUser(JSON.parse(userData));
+    }
   }, [dispatch]);
 
   useEffect(() => {
@@ -60,7 +82,6 @@ export default function Navbar() {
     { href: "/about", label: "About Us" },
     { href: "/blog", label: "Blog" },
     { href: "/contact", label: "Contact" },
-    { href: "/admin", label: "Admin" },
   ];
 
   const handleSearch = (e: React.FormEvent) => {
@@ -70,6 +91,13 @@ export default function Navbar() {
         searchQuery
       )}`;
     }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("user");
+    setUser(null);
+    toast.success("Logged out successfully");
+    router.push("/");
   };
 
   return (
@@ -224,9 +252,69 @@ export default function Navbar() {
               </Button>
 
               {/* User Account */}
-              <Button variant="ghost" size="sm">
-                <User className="h-4 w-4" />
-              </Button>
+              {user ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="relative">
+                      <Avatar className="h-6 w-6">
+                        <AvatarImage src="/placeholder.svg?height=24&width=24" />
+                        <AvatarFallback className="text-xs">
+                          {user.name.charAt(0)}
+                        </AvatarFallback>
+                      </Avatar>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-56" align="end">
+                    <DropdownMenuLabel>
+                      <div className="flex flex-col space-y-1">
+                        <p className="text-sm font-medium leading-none">
+                          {user.name}
+                        </p>
+                        <p className="text-xs leading-none text-muted-foreground">
+                          {user.email}
+                        </p>
+                        <Badge
+                          variant="outline"
+                          className="w-fit text-xs capitalize"
+                        >
+                          {user.role}
+                        </Badge>
+                      </div>
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link href="/dashboard">
+                        <LayoutDashboard className="mr-2 h-4 w-4" />
+                        <span>Dashboard</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/dashboard/profile">
+                        <User className="mr-2 h-4 w-4" />
+                        <span>Profile</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/dashboard/settings">
+                        <Settings className="mr-2 h-4 w-4" />
+                        <span>Settings</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleLogout}>
+                      <LogOut className="mr-2 h-4 w-4" />
+                      <span>Log out</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <Link href="/login">
+                  <Button variant="ghost" size="sm">
+                    <User className="h-4 w-4 mr-2" />
+                    Login
+                  </Button>
+                </Link>
+              )}
 
               {/* Cart */}
               <Link href="/cart">
@@ -270,6 +358,26 @@ export default function Navbar() {
                       </Button>
                     </form>
 
+                    {/* User Info - Mobile */}
+                    {user && (
+                      <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                        <Avatar className="h-10 w-10">
+                          <AvatarImage src="/placeholder.svg?height=40&width=40" />
+                          <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <p className="font-medium text-sm">{user.name}</p>
+                          <p className="text-xs text-gray-500">{user.email}</p>
+                          <Badge
+                            variant="outline"
+                            className="text-xs capitalize mt-1"
+                          >
+                            {user.role}
+                          </Badge>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Mobile Navigation Links */}
                     {navLinks.map((link) => (
                       <Link
@@ -281,6 +389,49 @@ export default function Navbar() {
                         {link.label}
                       </Link>
                     ))}
+
+                    {/* User Actions - Mobile */}
+                    {user ? (
+                      <div className="space-y-2 pt-4 border-t">
+                        <Link
+                          href="/dashboard"
+                          className="flex items-center space-x-2 text-sm py-2 hover:text-green-600"
+                          onClick={() => setIsOpen(false)}
+                        >
+                          <LayoutDashboard className="h-4 w-4" />
+                          <span>Dashboard</span>
+                        </Link>
+                        <Link
+                          href="/dashboard/profile"
+                          className="flex items-center space-x-2 text-sm py-2 hover:text-green-600"
+                          onClick={() => setIsOpen(false)}
+                        >
+                          <User className="h-4 w-4" />
+                          <span>Profile</span>
+                        </Link>
+                        <button
+                          onClick={() => {
+                            handleLogout();
+                            setIsOpen(false);
+                          }}
+                          className="flex items-center space-x-2 text-sm py-2 hover:text-red-600 w-full text-left"
+                        >
+                          <LogOut className="h-4 w-4" />
+                          <span>Logout</span>
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="pt-4 border-t">
+                        <Link
+                          href="/login"
+                          className="flex items-center justify-center space-x-2 bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700"
+                          onClick={() => setIsOpen(false)}
+                        >
+                          <User className="h-4 w-4" />
+                          <span>Login / Register</span>
+                        </Link>
+                      </div>
+                    )}
 
                     {/* Mobile Categories */}
                     <div className="pt-4">
