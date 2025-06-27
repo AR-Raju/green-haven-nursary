@@ -1,8 +1,8 @@
 import CategoriesSection from "@/components/CategoriesSection";
+import FeaturedProducts from "@/components/FeaturedProducts";
 import Footer from "@/components/Footer";
 import HeroSection from "@/components/HeroSection";
 import Navbar from "@/components/Navbar";
-import ProductList from "@/components/ProductList";
 
 export default function HomePage() {
   return (
@@ -10,20 +10,7 @@ export default function HomePage() {
       <Navbar />
       <HeroSection />
       <CategoriesSection />
-
-      {/* Featured Products */}
-      <section className="py-16 px-4">
-        <div className="container mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">Featured Products</h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
-              Discover our handpicked selection of premium plants and gardening
-              essentials
-            </p>
-          </div>
-          <ProductList limit={8} />
-        </div>
-      </section>
+      <FeaturedProducts />
 
       <Footer />
     </div>
