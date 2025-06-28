@@ -1,132 +1,226 @@
 "use client";
 
+import type React from "react";
+
 import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
 import Pagination from "@/components/Pagination";
+import ProductCard from "@/components/ProductCard";
 import ProductFilter from "@/components/ProductFilter";
-import ProductList from "@/components/ProductList";
+import { ProductCardSkeleton } from "@/components/SkeletonLoader";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { useBeforeUnload } from "@/hooks/useBeforeUnload";
-import { fetchProducts } from "@/redux/slices/productsSlice";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { fetchCategories } from "@/redux/slices/categoriesSlice";
+import {
+  clearFilters,
+  fetchProducts,
+  setFilters,
+} from "@/redux/slices/productsSlice";
 import type { AppDispatch, RootState } from "@/redux/store";
-import { Filter, Grid, List } from "lucide-react";
-import { useSearchParams } from "next/navigation";
+import { Search, SlidersHorizontal } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
 export default function ProductsPage() {
   const dispatch = useDispatch<AppDispatch>();
-  const searchParams = useSearchParams();
-  const { filters, currentPage, totalProducts, loading } = useSelector(
-    (state: RootState) => state.products
-  );
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const {
+    products,
+    loading,
+    error,
+    currentPage,
+    totalPages,
+    totalProducts,
+    filters,
+  } = useSelector((state: RootState) => state.products);
+  const { categories } = useSelector((state: RootState) => state.categories);
 
-  useBeforeUnload();
+  const [showFilters, setShowFilters] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
-    // Get initial filters from URL params
-    const initialFilters = {
-      category: searchParams.get("category") || "",
-      search: searchParams.get("search") || "",
-      minPrice: searchParams.get("minPrice")
-        ? Number(searchParams.get("minPrice"))
-        : undefined,
-      maxPrice: searchParams.get("maxPrice")
-        ? Number(searchParams.get("maxPrice"))
-        : undefined,
-      rating: searchParams.get("rating")
-        ? Number(searchParams.get("rating"))
-        : undefined,
-      sortBy: searchParams.get("sortBy") || "createdAt",
-      sortOrder: (searchParams.get("sortOrder") as "asc" | "desc") || "desc",
+    dispatch(fetchCategories({ limit: 100 }));
+  }, [dispatch]);
+
+  useEffect(() => {
+    const params = {
+      page: currentPage,
+      limit: 12,
+      ...(filters.category && { category: filters.category }),
+      ...(filters.search && { searchTerm: filters.search }),
+      ...(filters.sortBy &&
+        filters.sortOrder && {
+          sort: `${filters.sortOrder === "desc" ? "-" : ""}${filters.sortBy}`,
+        }),
     };
 
-    dispatch(fetchProducts({ ...initialFilters, page: currentPage }));
-  }, [dispatch, searchParams, currentPage]);
+    dispatch(fetchProducts(params));
+  }, [dispatch, currentPage, filters]);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    dispatch(setFilters({ search: searchTerm }));
+  };
+
+  const handleFilterChange = (key: string, value: string) => {
+    dispatch(setFilters({ [key]: value }));
+  };
+
+  const handlePageChange = (page: number) => {
+    dispatch(setFilters({ ...filters }));
+    // The page change will trigger useEffect to fetch new data
+  };
+
+  const handleClearFilters = () => {
+    dispatch(clearFilters());
+    setSearchTerm("");
+  };
+
+  if (error) {
+    return (
+      <div className="min-h-screen">
+        <Navbar />
+        <div className="container mx-auto px-4 py-16">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold mb-4">Error Loading Products</h1>
+            <p className="text-muted-foreground mb-8">{error}</p>
+            <Button onClick={() => dispatch(fetchProducts({}))}>
+              Try Again
+            </Button>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen">
       <Navbar />
 
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Our Products</h1>
-          <p className="text-gray-600 mb-4">
-            Discover our extensive collection of plants, tools, and gardening
+          <h1 className="text-3xl font-bold mb-4">Our Products</h1>
+          <p className="text-muted-foreground">
+            Discover our wide selection of beautiful plants and gardening
             supplies
           </p>
+        </div>
 
-          {/* Results Info & View Controls */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div className="text-sm text-gray-600">
-              {loading
-                ? "Loading products..."
-                : `Showing ${(currentPage - 1) * 12 + 1}-${Math.min(
-                    currentPage * 12,
-                    totalProducts
-                  )} of ${totalProducts} products`}
-            </div>
-
-            <div className="flex items-center gap-2">
-              {/* Mobile Filter Button */}
-              <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
-                <SheetTrigger asChild className="lg:hidden">
-                  <Button variant="outline" size="sm">
-                    <Filter className="h-4 w-4 mr-2" />
-                    Filters
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="left" className="w-80 p-0">
-                  <div className="p-6">
-                    <h2 className="text-lg font-semibold mb-4">Filters</h2>
-                    <ProductFilter />
-                  </div>
-                </SheetContent>
-              </Sheet>
-
-              {/* View Mode Toggle */}
-              <div className="flex border rounded-lg">
-                <Button
-                  variant={viewMode === "grid" ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => setViewMode("grid")}
-                  className="rounded-r-none"
-                >
-                  <Grid className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant={viewMode === "list" ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => setViewMode("list")}
-                  className="rounded-l-none"
-                >
-                  <List className="h-4 w-4" />
-                </Button>
+        {/* Search and Filters */}
+        <div className="mb-8 space-y-4">
+          <div className="flex flex-col sm:flex-row gap-4">
+            {/* Search */}
+            <form onSubmit={handleSearch} className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Input
+                  placeholder="Search products..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
               </div>
-            </div>
+            </form>
+
+            {/* Sort */}
+            <Select
+              value={`${filters.sortBy}-${filters.sortOrder}`}
+              onValueChange={(value) => {
+                const [sortBy, sortOrder] = value.split("-");
+                handleFilterChange("sortBy", sortBy);
+                handleFilterChange("sortOrder", sortOrder);
+              }}
+            >
+              <SelectTrigger className="w-full sm:w-[200px]">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="createdAt-desc">Newest First</SelectItem>
+                <SelectItem value="createdAt-asc">Oldest First</SelectItem>
+                <SelectItem value="price-asc">Price: Low to High</SelectItem>
+                <SelectItem value="price-desc">Price: High to Low</SelectItem>
+                <SelectItem value="title-asc">Name: A to Z</SelectItem>
+                <SelectItem value="title-desc">Name: Z to A</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {/* Filter Toggle */}
+            <Button
+              variant="outline"
+              onClick={() => setShowFilters(!showFilters)}
+              className="sm:w-auto"
+            >
+              <SlidersHorizontal className="h-4 w-4 mr-2" />
+              Filters
+            </Button>
           </div>
+
+          {/* Filters */}
+          {showFilters && (
+            <ProductFilter
+              categories={categories}
+              selectedCategory={filters.category}
+              onCategoryChange={(category) =>
+                handleFilterChange("category", category)
+              }
+              onClearFilters={handleClearFilters}
+            />
+          )}
         </div>
 
-        <div className="flex gap-8">
-          {/* Sidebar Filter - Desktop */}
-          <div className="hidden lg:block w-80 flex-shrink-0">
-            <div className="sticky top-24">
-              <ProductFilter />
-            </div>
-          </div>
-
-          {/* Main Content */}
-          <div className="flex-1 min-w-0">
-            <ProductList viewMode={viewMode} />
-            <div className="mt-8">
-              <Pagination />
-            </div>
-          </div>
+        {/* Results Info */}
+        <div className="mb-6 flex items-center justify-between">
+          <p className="text-sm text-muted-foreground">
+            Showing {products.length} of {totalProducts} products
+          </p>
+          {(filters.search || filters.category) && (
+            <Button variant="ghost" size="sm" onClick={handleClearFilters}>
+              Clear Filters
+            </Button>
+          )}
         </div>
+
+        {/* Products Grid */}
+        {loading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {Array.from({ length: 8 }).map((_, index) => (
+              <ProductCardSkeleton key={index} />
+            ))}
+          </div>
+        ) : products.length === 0 ? (
+          <div className="text-center py-16">
+            <h3 className="text-lg font-semibold mb-2">No products found</h3>
+            <p className="text-muted-foreground mb-4">
+              Try adjusting your search or filter criteria
+            </p>
+            <Button onClick={handleClearFilters}>Clear Filters</Button>
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-8">
+              {products.map((product) => (
+                <ProductCard key={product._id} product={product} />
+              ))}
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={handlePageChange}
+              />
+            )}
+          </>
+        )}
       </div>
 
       <Footer />

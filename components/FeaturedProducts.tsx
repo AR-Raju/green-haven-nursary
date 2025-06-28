@@ -17,7 +17,7 @@ export default function FeaturedProducts() {
   );
 
   useEffect(() => {
-    dispatch(fetchProducts({ limit: 8, sortBy: "rating", sortOrder: "desc" }));
+    dispatch(fetchProducts({ limit: 8, sort: "createdAt" }));
   }, [dispatch]);
 
   if (loading) {
@@ -58,7 +58,7 @@ export default function FeaturedProducts() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-8">
-          {products.slice(0, 8).map((product) => (
+          {products?.slice(0, 8).map((product) => (
             <ProductCard key={product._id} product={product} />
           ))}
         </div>

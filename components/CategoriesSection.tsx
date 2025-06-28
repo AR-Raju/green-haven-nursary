@@ -23,7 +23,7 @@ export default function CategoriesSection() {
   );
 
   useEffect(() => {
-    dispatch(fetchCategories());
+    dispatch(fetchCategories({ limit: 100 })); // Fetch categories with a limit of 100
   }, [dispatch]);
 
   if (loading) {
@@ -62,7 +62,7 @@ export default function CategoriesSection() {
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-8">
-          {categories.slice(0, 8).map((category) => {
+          {categories?.slice(0, 8).map((category) => {
             const IconComponent =
               categoryIcons[category.name as keyof typeof categoryIcons] ||
               Leaf;

@@ -1,53 +1,60 @@
-"use client"
+"use client";
 
-import { useSelector, useDispatch } from "react-redux"
-import type { RootState, AppDispatch } from "@/redux/store"
-import { setCurrentPage } from "@/redux/slices/productsSlice"
-import { Button } from "@/components/ui/button"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import { Button } from "@/components/ui/button";
+import { setCurrentPage } from "@/redux/slices/productsSlice";
+import type { AppDispatch, RootState } from "@/redux/store";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useDispatch, useSelector } from "react-redux";
 
 export default function Pagination() {
-  const dispatch = useDispatch<AppDispatch>()
-  const { currentPage, totalPages, totalProducts } = useSelector((state: RootState) => state.products)
+  const dispatch = useDispatch<AppDispatch>();
+  const { currentPage, totalPages, totalProducts } = useSelector(
+    (state: RootState) => state.products
+  );
 
   const handlePageChange = (page: number) => {
     if (page >= 1 && page <= totalPages) {
-      dispatch(setCurrentPage(page))
+      dispatch(setCurrentPage(page));
     }
-  }
+  };
 
-  if (totalPages <= 1) return null
+  if (totalPages <= 1) return null;
 
   const getVisiblePages = () => {
-    const delta = 2
-    const range = []
-    const rangeWithDots = []
+    const delta = 2;
+    const range = [];
+    const rangeWithDots = [];
 
-    for (let i = Math.max(2, currentPage - delta); i <= Math.min(totalPages - 1, currentPage + delta); i++) {
-      range.push(i)
+    for (
+      let i = Math.max(2, currentPage - delta);
+      i <= Math.min(totalPages - 1, currentPage + delta);
+      i++
+    ) {
+      range.push(i);
     }
 
     if (currentPage - delta > 2) {
-      rangeWithDots.push(1, "...")
+      rangeWithDots.push(1, "...");
     } else {
-      rangeWithDots.push(1)
+      rangeWithDots.push(1);
     }
 
-    rangeWithDots.push(...range)
+    rangeWithDots.push(...range);
 
     if (currentPage + delta < totalPages - 1) {
-      rangeWithDots.push("...", totalPages)
+      rangeWithDots.push("...", totalPages);
     } else {
-      rangeWithDots.push(totalPages)
+      rangeWithDots.push(totalPages);
     }
 
-    return rangeWithDots
-  }
+    return rangeWithDots;
+  };
 
   return (
     <div className="flex flex-col items-center space-y-4">
       <div className="text-sm text-muted-foreground">
-        Showing {(currentPage - 1) * 12 + 1} to {Math.min(currentPage * 12, totalProducts)} of {totalProducts} products
+        Showing {(currentPage - 1) * 12 + 1} to{" "}
+        {Math.min(currentPage * 12, totalProducts)} of {totalProducts} products
       </div>
 
       <div className="flex items-center space-x-2">
@@ -85,5 +92,5 @@ export default function Pagination() {
         </Button>
       </div>
     </div>
-  )
+  );
 }
