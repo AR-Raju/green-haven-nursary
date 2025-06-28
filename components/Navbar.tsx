@@ -59,7 +59,7 @@ export default function Navbar() {
 
   useEffect(() => {
     dispatch(initializeCart());
-    dispatch(fetchCategories());
+    dispatch(fetchCategories({ limit: 100 }));
 
     // Check for logged in user
     const userData = localStorage.getItem("user");
@@ -201,7 +201,7 @@ export default function Navbar() {
                             </Link>
                           </NavigationMenuLink>
                         </div>
-                        {categories.slice(0, 6).map((category) => (
+                        {categories?.slice(0, 6).map((category) => (
                           <Link
                             key={category._id}
                             href={`/products?category=${category._id}`}
@@ -437,7 +437,7 @@ export default function Navbar() {
                     <div className="pt-4">
                       <h3 className="font-semibold text-lg mb-3">Categories</h3>
                       <div className="space-y-2">
-                        {categories.slice(0, 8).map((category) => (
+                        {categories?.slice(0, 8).map((category) => (
                           <Link
                             key={category._id}
                             href={`/products?category=${category._id}`}

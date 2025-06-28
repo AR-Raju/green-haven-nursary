@@ -21,16 +21,23 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { clearError, loginUser, registerUser } from "@/redux/slices/authSlice";
+import type { AppDispatch, RootState } from "@/redux/store";
 import { Eye, EyeOff, Leaf, Lock, Mail, User } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { toast } from "sonner";
 
 export default function LoginPage() {
   const router = useRouter();
+  const dispatch = useDispatch<AppDispatch>();
+  const { loading, error, isAuthenticated } = useSelector(
+    (state: RootState) => state.auth
+  );
+
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [loginData, setLoginData] = useState({
     email: "",
     password: "",
@@ -42,6 +49,19 @@ export default function LoginPage() {
     confirmPassword: "",
     role: "user",
   });
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.push("/");
+    }
+  }, [isAuthenticated, router]);
+
+  useEffect(() => {
+    if (error) {
+      toast.error(error);
+      dispatch(clearError());
+    }
+  }, [error, dispatch]);
 
   const demoCredentials = [
     {
@@ -66,57 +86,39 @@ export default function LoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      const user = demoCredentials.find(
-        (cred) =>
-          cred.email === loginData.email && cred.password === loginData.password
-      );
-
-      if (user) {
-        localStorage.setItem("user", JSON.stringify(user));
-        toast.success("Login successful!");
-
-        // Role-based redirect
-        if (user.role === "admin" || user.role === "vendor") {
-          router.push("/dashboard");
-        } else {
-          router.push("/"); // Regular users go to homepage
-        }
-      } else {
-        toast.error("Invalid credentials");
-      }
-      setIsLoading(false);
-    }, 1000);
+    try {
+      await dispatch(loginUser(loginData)).unwrap();
+      toast.success("Login successful!");
+      router.push("/");
+    } catch (error) {
+      // Error is handled by useEffect
+    }
   };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (registerData.password !== registerData.confirmPassword) {
       toast.error("Passwords don't match");
       return;
     }
 
-    setIsLoading(true);
-    setTimeout(() => {
-      const newUser = {
-        role: registerData.role,
-        name: registerData.name,
-        email: registerData.email,
-      };
-      localStorage.setItem("user", JSON.stringify(newUser));
-      toast.success("Registration successful!");
+    try {
+      await dispatch(
+        registerUser({
+          name: registerData.name,
+          email: registerData.email,
+          password: registerData.password,
+          role: registerData.role,
+        })
+      ).unwrap();
 
-      // Role-based redirect
-      if (newUser.role === "admin" || newUser.role === "vendor") {
-        router.push("/dashboard");
-      } else {
-        router.push("/"); // Regular users go to homepage
-      }
-      setIsLoading(false);
-    }, 1000);
+      toast.success("Registration successful!");
+      router.push("/");
+    } catch (error) {
+      // Error is handled by useEffect
+    }
   };
 
   const fillDemoCredentials = (credentials: any) => {
@@ -221,9 +223,9 @@ export default function LoginPage() {
                   <Button
                     type="submit"
                     className="w-full bg-green-600 hover:bg-green-700"
-                    disabled={isLoading}
+                    disabled={loading}
                   >
-                    {isLoading ? "Signing in..." : "Sign In"}
+                    {loading ? "Signing in..." : "Sign In"}
                   </Button>
                 </form>
 
@@ -411,9 +413,9 @@ export default function LoginPage() {
                   <Button
                     type="submit"
                     className="w-full bg-green-600 hover:bg-green-700"
-                    disabled={isLoading}
+                    disabled={loading}
                   >
-                    {isLoading ? "Creating account..." : "Create Account"}
+                    {loading ? "Creating account..." : "Create Account"}
                   </Button>
                 </form>
 
