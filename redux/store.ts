@@ -1,15 +1,31 @@
-import { configureStore } from "@reduxjs/toolkit"
-import productsReducer from "./slices/productsSlice"
-import categoriesReducer from "./slices/categoriesSlice"
-import cartReducer from "./slices/cartSlice"
-import ordersReducer from "./slices/ordersSlice"
+import { configureStore } from "@reduxjs/toolkit";
+import analyticsReducer from "./slices/analyticsSlice";
+import authReducer from "./slices/authSlice";
+import blogReducer from "./slices/blogSlice";
+import cartReducer from "./slices/cartSlice";
+import categoriesReducer from "./slices/categoriesSlice";
+import ordersReducer from "./slices/ordersSlice";
+import productsReducer from "./slices/productsSlice";
+import reviewsReducer from "./slices/reviewsSlice";
+import shippingReducer from "./slices/shippingSlice";
+import uploadReducer from "./slices/uploadSlice";
+import usersReducer from "./slices/usersSlice";
+import wishlistReducer from "./slices/wishlistSlice";
 
 export const store = configureStore({
   reducer: {
+    auth: authReducer,
+    users: usersReducer,
     products: productsReducer,
     categories: categoriesReducer,
     cart: cartReducer,
     orders: ordersReducer,
+    wishlist: wishlistReducer,
+    reviews: reviewsReducer,
+    blog: blogReducer,
+    shipping: shippingReducer,
+    analytics: analyticsReducer,
+    upload: uploadReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
@@ -17,7 +33,7 @@ export const store = configureStore({
         ignoredActions: ["persist/PERSIST"],
       },
     }),
-})
+});
 
-export type RootState = ReturnType<typeof store.getState>
-export type AppDispatch = typeof store.dispatch
+export type RootState = ReturnType<typeof store.getState>;
+export type AppDispatch = typeof store.dispatch;

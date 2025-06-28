@@ -1,15 +1,37 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { Provider } from "react-redux"
-import { store } from "@/redux/store"
-import StripeProvider from "@/components/StripeProvider"
+import { ThemeProvider } from "@/components/theme-provider";
+import { Toaster } from "@/components/ui/sonner";
+import { loadUserFromStorage } from "@/redux/slices/authSlice";
+import { store } from "@/redux/store";
+import { useEffect } from "react";
+import { Provider, useDispatch } from "react-redux";
 
-export function Providers({ children }: { children: React.ReactNode }) {
+function AuthInitializer() {
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    dispatch(loadUserFromStorage());
+  }, [dispatch]);
+
+  return null;
+}
+
+export default function Providers({ children }: { children: React.ReactNode }) {
   return (
     <Provider store={store}>
-      <StripeProvider>{children}</StripeProvider>
+      <ThemeProvider
+        attribute="class"
+        defaultTheme="light"
+        enableSystem
+        disableTransitionOnChange
+      >
+        <AuthInitializer />
+        {children}
+        <Toaster />
+      </ThemeProvider>
     </Provider>
-  )
+  );
 }
