@@ -1,33 +1,34 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState } from "react"
-import { useSelector, useDispatch } from "react-redux"
-import { useRouter } from "next/navigation"
-import type { RootState, AppDispatch } from "@/redux/store"
-import { createOrder } from "@/redux/slices/ordersSlice"
-import { clearCart } from "@/redux/slices/cartSlice"
-import Navbar from "@/components/Navbar"
-import Footer from "@/components/Footer"
-import StripeProvider from "@/components/StripeProvider"
-import PaymentForm from "@/components/PaymentForm"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Separator } from "@/components/ui/separator"
-import { useToast } from "@/hooks/use-toast"
-import { ShoppingBag, CreditCard, Truck } from "lucide-react"
-import Image from "next/image"
+import Footer from "@/components/Footer";
+import Navbar from "@/components/Navbar";
+import PaymentForm from "@/components/PaymentForm";
+import StripeProvider from "@/components/StripeProvider";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Separator } from "@/components/ui/separator";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/api";
+import { clearCart } from "@/redux/slices/cartSlice";
+import { createOrder } from "@/redux/slices/ordersSlice";
+import type { AppDispatch, RootState } from "@/redux/store";
+import { CreditCard, ShoppingBag, Truck } from "lucide-react";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 
 export default function CheckoutPage() {
-  const router = useRouter()
-  const dispatch = useDispatch<AppDispatch>()
-  const { toast } = useToast()
-  const { items, totalAmount } = useSelector((state: RootState) => state.cart)
-  const { loading } = useSelector((state: RootState) => state.orders)
+  const router = useRouter();
+  const dispatch = useDispatch<AppDispatch>();
+  const { toast } = useToast();
+  const { items, totalAmount } = useSelector((state: RootState) => state.cart);
+  const { loading } = useSelector((state: RootState) => state.orders);
 
   const [formData, setFormData] = useState({
     customerName: "",
@@ -40,91 +41,88 @@ export default function CheckoutPage() {
       zipCode: "",
     },
     paymentMethod: "COD" as "COD" | "STRIPE",
-  })
+  });
 
-  const [errors, setErrors] = useState<Record<string, string>>({})
-  const [clientSecret, setClientSecret] = useState<string>("")
-  const [currentOrderId, setCurrentOrderId] = useState<string>("")
-  const [showPaymentForm, setShowPaymentForm] = useState(false)
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [clientSecret, setClientSecret] = useState<string>("");
+  const [currentOrderId, setCurrentOrderId] = useState<string>("");
+  const [showPaymentForm, setShowPaymentForm] = useState(false);
 
   const validateForm = () => {
-    const newErrors: Record<string, string> = {}
+    const newErrors: Record<string, string> = {};
 
-    if (!formData.customerName.trim()) newErrors.customerName = "Name is required"
-    if (!formData.email.trim()) newErrors.email = "Email is required"
-    else if (!/^\S+@\S+\.\S+$/.test(formData.email)) newErrors.email = "Invalid email format"
-    if (!formData.phone.trim()) newErrors.phone = "Phone number is required"
-    if (!formData.address.street.trim()) newErrors.street = "Street address is required"
-    if (!formData.address.city.trim()) newErrors.city = "City is required"
-    if (!formData.address.state.trim()) newErrors.state = "State is required"
-    if (!formData.address.zipCode.trim()) newErrors.zipCode = "ZIP code is required"
+    if (!formData.customerName.trim())
+      newErrors.customerName = "Name is required";
+    if (!formData.email.trim()) newErrors.email = "Email is required";
+    else if (!/^\S+@\S+\.\S+$/.test(formData.email))
+      newErrors.email = "Invalid email format";
+    if (!formData.phone.trim()) newErrors.phone = "Phone number is required";
+    if (!formData.address.street.trim())
+      newErrors.street = "Street address is required";
+    if (!formData.address.city.trim()) newErrors.city = "City is required";
+    if (!formData.address.state.trim()) newErrors.state = "State is required";
+    if (!formData.address.zipCode.trim())
+      newErrors.zipCode = "ZIP code is required";
 
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleInputChange = (field: string, value: string) => {
     if (field.includes(".")) {
-      const [parent, child] = field.split(".")
+      const [parent, child] = field.split(".");
       setFormData((prev) => ({
         ...prev,
         [parent]: {
           ...(prev[parent as keyof typeof prev] as any),
           [child]: value,
         },
-      }))
+      }));
     } else {
-      setFormData((prev) => ({ ...prev, [field]: value }))
+      setFormData((prev) => ({ ...prev, [field]: value }));
     }
 
     if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: "" }))
+      setErrors((prev) => ({ ...prev, [field]: "" }));
     }
-  }
+  };
 
   const createPaymentIntent = async (orderId: string) => {
     try {
-      const response = await fetch("/api/create-payment-intent", {
+      const response = await apiRequest("/payment/create-payment-intent", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
         body: JSON.stringify({
           amount: totalAmount,
+          currency: "usd",
           metadata: {
             orderId,
           },
         }),
-      })
+      });
 
-      if (!response.ok) {
-        throw new Error("Failed to create payment intent")
-      }
-
-      const data = await response.json()
-      setClientSecret(data.clientSecret)
-      setShowPaymentForm(true)
+      setClientSecret(response.data.clientSecret);
+      setShowPaymentForm(true);
     } catch (error) {
       toast({
         title: "Payment Setup Failed",
         description: "Failed to setup payment. Please try again.",
         variant: "destructive",
-      })
+      });
     }
-  }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
 
-    if (!validateForm()) return
+    if (!validateForm()) return;
 
     if (items.length === 0) {
       toast({
         title: "Empty Cart",
         description: "Your cart is empty. Add some items before checkout.",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
     try {
@@ -136,48 +134,48 @@ export default function CheckoutPage() {
         items: items.map((item) => ({
           product: item.product._id,
           quantity: item.quantity,
-          price: item.product.price,
         })),
-        totalAmount,
         paymentMethod: formData.paymentMethod,
-      }
+      };
 
-      const result = await dispatch(createOrder(orderData)).unwrap()
-      setCurrentOrderId(result.order._id)
+      const result = await dispatch(createOrder(orderData)).unwrap();
+      setCurrentOrderId(result.order._id);
 
       if (formData.paymentMethod === "STRIPE") {
         // Create payment intent for Stripe
-        await createPaymentIntent(result.order._id)
+        await createPaymentIntent(result.order._id);
       } else {
         // COD order - complete immediately
-        dispatch(clearCart())
+        dispatch(clearCart());
         toast({
           title: "Order Placed Successfully!",
-          description: "Thank you for your order. You will receive a confirmation email shortly.",
-        })
-        router.push("/order-success")
+          description:
+            "Thank you for your order. You will receive a confirmation email shortly.",
+        });
+        router.push("/order-success");
       }
     } catch (error) {
       toast({
         title: "Order Failed",
-        description: "There was an error processing your order. Please try again.",
+        description:
+          "There was an error processing your order. Please try again.",
         variant: "destructive",
-      })
+      });
     }
-  }
+  };
 
   const handlePaymentSuccess = () => {
-    dispatch(clearCart())
-    router.push("/order-success")
-  }
+    dispatch(clearCart());
+    router.push("/order-success");
+  };
 
   const handlePaymentError = (error: string) => {
     toast({
       title: "Payment Failed",
       description: error,
       variant: "destructive",
-    })
-  }
+    });
+  };
 
   if (items.length === 0) {
     return (
@@ -187,13 +185,17 @@ export default function CheckoutPage() {
           <div className="text-center">
             <ShoppingBag className="h-24 w-24 text-gray-300 mx-auto mb-4" />
             <h1 className="text-2xl font-bold mb-4">Your Cart is Empty</h1>
-            <p className="text-muted-foreground mb-8">Add some items to your cart before checkout.</p>
-            <Button onClick={() => router.push("/products")}>Continue Shopping</Button>
+            <p className="text-muted-foreground mb-8">
+              Add some items to your cart before checkout.
+            </p>
+            <Button onClick={() => router.push("/products")}>
+              Continue Shopping
+            </Button>
           </div>
         </div>
         <Footer />
       </div>
-    )
+    );
   }
 
   if (showPaymentForm && clientSecret) {
@@ -215,7 +217,7 @@ export default function CheckoutPage() {
         </div>
         <Footer />
       </div>
-    )
+    );
   }
 
   return (
@@ -242,10 +244,16 @@ export default function CheckoutPage() {
                     <Input
                       id="customerName"
                       value={formData.customerName}
-                      onChange={(e) => handleInputChange("customerName", e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("customerName", e.target.value)
+                      }
                       placeholder="Enter your full name"
                     />
-                    {errors.customerName && <p className="text-sm text-red-500">{errors.customerName}</p>}
+                    {errors.customerName && (
+                      <p className="text-sm text-red-500">
+                        {errors.customerName}
+                      </p>
+                    )}
                   </div>
 
                   <div className="space-y-2">
@@ -254,10 +262,14 @@ export default function CheckoutPage() {
                       id="email"
                       type="email"
                       value={formData.email}
-                      onChange={(e) => handleInputChange("email", e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("email", e.target.value)
+                      }
                       placeholder="Enter your email"
                     />
-                    {errors.email && <p className="text-sm text-red-500">{errors.email}</p>}
+                    {errors.email && (
+                      <p className="text-sm text-red-500">{errors.email}</p>
+                    )}
                   </div>
                 </div>
 
@@ -269,7 +281,9 @@ export default function CheckoutPage() {
                     onChange={(e) => handleInputChange("phone", e.target.value)}
                     placeholder="Enter your phone number"
                   />
-                  {errors.phone && <p className="text-sm text-red-500">{errors.phone}</p>}
+                  {errors.phone && (
+                    <p className="text-sm text-red-500">{errors.phone}</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -277,10 +291,14 @@ export default function CheckoutPage() {
                   <Input
                     id="street"
                     value={formData.address.street}
-                    onChange={(e) => handleInputChange("address.street", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("address.street", e.target.value)
+                    }
                     placeholder="Enter your street address"
                   />
-                  {errors.street && <p className="text-sm text-red-500">{errors.street}</p>}
+                  {errors.street && (
+                    <p className="text-sm text-red-500">{errors.street}</p>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -289,10 +307,14 @@ export default function CheckoutPage() {
                     <Input
                       id="city"
                       value={formData.address.city}
-                      onChange={(e) => handleInputChange("address.city", e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("address.city", e.target.value)
+                      }
                       placeholder="City"
                     />
-                    {errors.city && <p className="text-sm text-red-500">{errors.city}</p>}
+                    {errors.city && (
+                      <p className="text-sm text-red-500">{errors.city}</p>
+                    )}
                   </div>
 
                   <div className="space-y-2">
@@ -300,10 +322,14 @@ export default function CheckoutPage() {
                     <Input
                       id="state"
                       value={formData.address.state}
-                      onChange={(e) => handleInputChange("address.state", e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("address.state", e.target.value)
+                      }
                       placeholder="State"
                     />
-                    {errors.state && <p className="text-sm text-red-500">{errors.state}</p>}
+                    {errors.state && (
+                      <p className="text-sm text-red-500">{errors.state}</p>
+                    )}
                   </div>
 
                   <div className="space-y-2">
@@ -311,10 +337,14 @@ export default function CheckoutPage() {
                     <Input
                       id="zipCode"
                       value={formData.address.zipCode}
-                      onChange={(e) => handleInputChange("address.zipCode", e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("address.zipCode", e.target.value)
+                      }
                       placeholder="ZIP Code"
                     />
-                    {errors.zipCode && <p className="text-sm text-red-500">{errors.zipCode}</p>}
+                    {errors.zipCode && (
+                      <p className="text-sm text-red-500">{errors.zipCode}</p>
+                    )}
                   </div>
                 </div>
               </CardContent>
@@ -330,14 +360,18 @@ export default function CheckoutPage() {
               <CardContent>
                 <RadioGroup
                   value={formData.paymentMethod}
-                  onValueChange={(value) => handleInputChange("paymentMethod", value)}
+                  onValueChange={(value) =>
+                    handleInputChange("paymentMethod", value)
+                  }
                 >
                   <div className="flex items-center space-x-2 p-4 border rounded-lg">
                     <RadioGroupItem value="COD" id="cod" />
                     <Label htmlFor="cod" className="flex-1 cursor-pointer">
                       <div>
                         <p className="font-medium">Cash on Delivery</p>
-                        <p className="text-sm text-muted-foreground">Pay when your order arrives</p>
+                        <p className="text-sm text-muted-foreground">
+                          Pay when your order arrives
+                        </p>
                       </div>
                     </Label>
                   </div>
@@ -346,7 +380,9 @@ export default function CheckoutPage() {
                     <Label htmlFor="stripe" className="flex-1 cursor-pointer">
                       <div>
                         <p className="font-medium">Credit/Debit Card</p>
-                        <p className="text-sm text-muted-foreground">Secure payment with Stripe</p>
+                        <p className="text-sm text-muted-foreground">
+                          Secure payment with Stripe
+                        </p>
                       </div>
                     </Label>
                   </div>
@@ -365,7 +401,10 @@ export default function CheckoutPage() {
                 {/* Order Items */}
                 <div className="space-y-3">
                   {items.map((item) => (
-                    <div key={item.product._id} className="flex items-center gap-3">
+                    <div
+                      key={item.product._id}
+                      className="flex items-center gap-3"
+                    >
                       <div className="relative w-12 h-12 rounded-md overflow-hidden">
                         <Image
                           src={item.product.image || "/placeholder.svg"}
@@ -375,12 +414,17 @@ export default function CheckoutPage() {
                         />
                       </div>
                       <div className="flex-1">
-                        <p className="font-medium text-sm">{item.product.title}</p>
+                        <p className="font-medium text-sm">
+                          {item.product.title}
+                        </p>
                         <p className="text-xs text-muted-foreground">
-                          Qty: {item.quantity} × ${item.product.price.toFixed(2)}
+                          Qty: {item.quantity} × $
+                          {item.product.price.toFixed(2)}
                         </p>
                       </div>
-                      <p className="font-medium">${(item.product.price * item.quantity).toFixed(2)}</p>
+                      <p className="font-medium">
+                        ${(item.product.price * item.quantity).toFixed(2)}
+                      </p>
                     </div>
                   ))}
                 </div>
@@ -408,12 +452,17 @@ export default function CheckoutPage() {
                   </div>
                 </div>
 
-                <Button onClick={handleSubmit} disabled={loading} size="lg" className="w-full">
+                <Button
+                  onClick={handleSubmit}
+                  disabled={loading}
+                  size="lg"
+                  className="w-full"
+                >
                   {loading
                     ? "Processing..."
                     : formData.paymentMethod === "STRIPE"
-                      ? "Continue to Payment"
-                      : "Place Order"}
+                    ? "Continue to Payment"
+                    : "Place Order"}
                 </Button>
 
                 <p className="text-xs text-muted-foreground text-center">
@@ -427,5 +476,5 @@ export default function CheckoutPage() {
 
       <Footer />
     </div>
-  )
+  );
 }
