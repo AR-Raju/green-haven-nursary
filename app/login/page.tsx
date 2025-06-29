@@ -33,7 +33,7 @@ import { toast } from "sonner";
 export default function LoginPage() {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
-  const { loading, error, isAuthenticated } = useSelector(
+  const { loading, error, isAuthenticated, user } = useSelector(
     (state: RootState) => state.auth
   );
 
@@ -49,12 +49,18 @@ export default function LoginPage() {
     confirmPassword: "",
     role: "user",
   });
+  const [tab, setTab] = useState<"login" | "register">("login");
 
   useEffect(() => {
-    if (isAuthenticated) {
-      router.push("/");
+    if (isAuthenticated && user) {
+      // Role-based redirection
+      if (user.role === "admin" || user.role === "vendor") {
+        router.push("/dashboard");
+      } else {
+        router.push("/"); // Regular users go to homepage
+      }
     }
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, user, router]);
 
   useEffect(() => {
     if (error) {
@@ -88,9 +94,15 @@ export default function LoginPage() {
     e.preventDefault();
 
     try {
-      await dispatch(loginUser(loginData)).unwrap();
+      const result = await dispatch(loginUser(loginData)).unwrap();
       toast.success("Login successful!");
-      router.push("/");
+
+      // Role-based redirection
+      if (result.user.role === "admin" || result.user.role === "vendor") {
+        router.push("/dashboard");
+      } else {
+        router.push("/"); // Regular users go to homepage
+      }
     } catch (error) {
       // Error is handled by useEffect
     }
@@ -115,7 +127,18 @@ export default function LoginPage() {
       ).unwrap();
 
       toast.success("Registration successful!");
-      router.push("/");
+
+      // Reset form fields
+      setRegisterData({
+        name: "",
+        email: "",
+        password: "",
+        confirmPassword: "",
+        role: "", // or default role like "user"
+      });
+
+      // Switch to login tab
+      setTab("login");
     } catch (error) {
       // Error is handled by useEffect
     }
@@ -153,7 +176,11 @@ export default function LoginPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="login" className="space-y-4">
+            <Tabs
+              value={tab}
+              onValueChange={(value) => setTab(value as "login" | "register")}
+              className="space-y-4"
+            >
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="login">Sign In</TabsTrigger>
                 <TabsTrigger value="register">Sign Up</TabsTrigger>

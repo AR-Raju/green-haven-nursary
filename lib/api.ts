@@ -1,6 +1,7 @@
 // API configuration and utilities
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "https://your-api-domain.vercel.app/api";
+  process.env.NEXT_PUBLIC_API_URL ||
+  "https://green-haven-server.vercel.app/api";
 
 // Get auth token from localStorage
 const getAuthToken = () => {
@@ -26,41 +27,17 @@ export const apiRequest = async (
     ...options,
   };
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
+  try {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
+    const data = await response.json();
 
-  if (!response.ok) {
-    const error = await response
-      .json()
-      .catch(() => ({ message: "Network error" }));
-    throw new Error(error.message || `HTTP error! status: ${response.status}`);
+    if (!response.ok) {
+      throw new Error(data.error || `HTTP error! status: ${response.status}`);
+    }
+
+    return data;
+  } catch (error) {
+    console.error("API request failed:", error);
+    throw error;
   }
-
-  return response.json();
-};
-
-// Upload helper for form data
-export const uploadRequest = async (
-  endpoint: string,
-  formData: FormData
-): Promise<any> => {
-  const token = getAuthToken();
-
-  const config: RequestInit = {
-    method: "POST",
-    headers: {
-      ...(token && { Authorization: `Bearer ${token}` }),
-    },
-    body: formData,
-  };
-
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
-
-  if (!response.ok) {
-    const error = await response
-      .json()
-      .catch(() => ({ message: "Upload failed" }));
-    throw new Error(error.message || `HTTP error! status: ${response.status}`);
-  }
-
-  return response.json();
 };
