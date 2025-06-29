@@ -1,31 +1,27 @@
 import { apiRequest } from "@/lib/api";
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 
-interface AnalyticsData {
+export interface AnalyticsData {
   totalRevenue: number;
   totalOrders: number;
-  totalCustomers: number;
-  conversionRate: number;
-  salesData: Array<{
-    month: string;
-    sales: number;
-    orders: number;
-    customers: number;
-  }>;
+  totalProducts: number;
+  totalUsers: number;
+  revenueGrowth: number;
+  ordersGrowth: number;
   topProducts: Array<{
-    name: string;
-    sales: number;
+    _id: string;
+    title: string;
+    totalSold: number;
     revenue: number;
   }>;
-  categoryData: Array<{
-    name: string;
-    value: number;
-    color: string;
+  revenueByMonth: Array<{
+    month: string;
+    revenue: number;
+    orders: number;
   }>;
-  trafficData: Array<{
-    source: string;
-    visitors: number;
-    percentage: number;
+  ordersByStatus: Array<{
+    status: string;
+    count: number;
   }>;
 }
 
@@ -42,13 +38,13 @@ const initialState: AnalyticsState = {
 };
 
 // Get analytics dashboard
-export const fetchAnalytics = createAsyncThunk(
-  "analytics/fetchAnalytics",
-  async (period = 30) => {
-    const response = await apiRequest(`/analytics?period=${period}`);
-    return response.data;
-  }
-);
+export const fetchAnalytics = createAsyncThunk<
+  any, // Replace 'any' with a more specific return type if known
+  number | undefined
+>("analytics/fetchAnalytics", async (period = 30) => {
+  const response = await apiRequest(`/analytics?period=${period}`);
+  return response.data;
+});
 
 const analyticsSlice = createSlice({
   name: "analytics",

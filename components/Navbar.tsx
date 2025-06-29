@@ -24,8 +24,10 @@ import {
 } from "@/components/ui/navigation-menu";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
+import { loadUserFromStorage, logoutUser } from "@/redux/slices/authSlice";
 import { initializeCart } from "@/redux/slices/cartSlice";
 import { fetchCategories } from "@/redux/slices/categoriesSlice";
+import { fetchWishlist } from "@/redux/slices/wishlistSlice";
 import type { AppDispatch, RootState } from "@/redux/store";
 import {
   Heart,
@@ -51,22 +53,29 @@ export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [user, setUser] = useState<any>(null);
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
+
   const { totalItems } = useSelector((state: RootState) => state.cart);
   const { categories } = useSelector((state: RootState) => state.categories);
+  const { user, isAuthenticated } = useSelector(
+    (state: RootState) => state.auth
+  );
+  const { items: wishlistItems } = useSelector(
+    (state: RootState) => state.wishlist
+  );
 
   useEffect(() => {
+    dispatch(loadUserFromStorage());
     dispatch(initializeCart());
-    dispatch(fetchCategories({ limit: 100 }));
-
-    // Check for logged in user
-    const userData = localStorage.getItem("user");
-    if (userData) {
-      setUser(JSON.parse(userData));
-    }
+    dispatch(fetchCategories({ limit: 8 }));
   }, [dispatch]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      dispatch(fetchWishlist());
+    }
+  }, [dispatch, isAuthenticated]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -87,17 +96,18 @@ export default function Navbar() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      window.location.href = `/products?search=${encodeURIComponent(
-        searchQuery
-      )}`;
+      router.push(`/products?search=${encodeURIComponent(searchQuery)}`);
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("user");
-    setUser(null);
-    toast.success("Logged out successfully");
-    router.push("/");
+  const handleLogout = async () => {
+    try {
+      await dispatch(logoutUser()).unwrap();
+      toast.success("Logged out successfully");
+      router.push("/login"); // Redirect to login page after logout
+    } catch (error) {
+      toast.error("Logout failed");
+    }
   };
 
   return (
@@ -241,18 +251,22 @@ export default function Navbar() {
               </Button>
 
               {/* Wishlist */}
-              <Button variant="ghost" size="sm" className="relative">
-                <Heart className="h-4 w-4" />
-                <Badge
-                  variant="destructive"
-                  className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 text-xs"
-                >
-                  0
-                </Badge>
-              </Button>
+              <Link href="/dashboard/wishlist">
+                <Button variant="ghost" size="sm" className="relative">
+                  <Heart className="h-4 w-4" />
+                  {wishlistItems.length > 0 && (
+                    <Badge
+                      variant="destructive"
+                      className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 text-xs"
+                    >
+                      {wishlistItems.length}
+                    </Badge>
+                  )}
+                </Button>
+              </Link>
 
               {/* User Account */}
-              {user ? (
+              {isAuthenticated && user ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="sm" className="relative">
@@ -282,12 +296,14 @@ export default function Navbar() {
                       </div>
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem asChild>
-                      <Link href="/dashboard">
-                        <LayoutDashboard className="mr-2 h-4 w-4" />
-                        <span>Dashboard</span>
-                      </Link>
-                    </DropdownMenuItem>
+                    {(user.role === "admin" || user.role === "vendor") && (
+                      <DropdownMenuItem asChild>
+                        <Link href="/dashboard">
+                          <LayoutDashboard className="mr-2 h-4 w-4" />
+                          <span>Dashboard</span>
+                        </Link>
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem asChild>
                       <Link href="/dashboard/profile">
                         <User className="mr-2 h-4 w-4" />
@@ -359,7 +375,7 @@ export default function Navbar() {
                     </form>
 
                     {/* User Info - Mobile */}
-                    {user && (
+                    {isAuthenticated && user && (
                       <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
                         <Avatar className="h-10 w-10">
                           <AvatarImage src="/placeholder.svg?height=40&width=40" />
@@ -391,16 +407,18 @@ export default function Navbar() {
                     ))}
 
                     {/* User Actions - Mobile */}
-                    {user ? (
+                    {isAuthenticated && user ? (
                       <div className="space-y-2 pt-4 border-t">
-                        <Link
-                          href="/dashboard"
-                          className="flex items-center space-x-2 text-sm py-2 hover:text-green-600"
-                          onClick={() => setIsOpen(false)}
-                        >
-                          <LayoutDashboard className="h-4 w-4" />
-                          <span>Dashboard</span>
-                        </Link>
+                        {(user.role === "admin" || user.role === "vendor") && (
+                          <Link
+                            href="/dashboard"
+                            className="flex items-center space-x-2 text-sm py-2 hover:text-green-600"
+                            onClick={() => setIsOpen(false)}
+                          >
+                            <LayoutDashboard className="h-4 w-4" />
+                            <span>Dashboard</span>
+                          </Link>
+                        )}
                         <Link
                           href="/dashboard/profile"
                           className="flex items-center space-x-2 text-sm py-2 hover:text-green-600"

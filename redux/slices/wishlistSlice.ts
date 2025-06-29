@@ -1,12 +1,16 @@
 import { apiRequest } from "@/lib/api";
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import type { Product } from "./productsSlice";
 
-interface WishlistItem {
+export interface WishlistItem {
   _id: string;
-  userId: string;
-  productId: Product;
-  createdAt: string;
+  product: {
+    _id: string;
+    title: string;
+    price: number;
+    image: string;
+    category: string;
+  };
+  addedAt: string;
 }
 
 interface WishlistState {
@@ -83,7 +87,7 @@ const wishlistSlice = createSlice({
       // Remove from wishlist
       .addCase(removeFromWishlist.fulfilled, (state, action) => {
         state.items = state.items.filter(
-          (item) => item.productId._id !== action.payload
+          (item) => item.product._id !== action.payload
         );
       });
   },

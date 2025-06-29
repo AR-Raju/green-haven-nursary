@@ -4,8 +4,9 @@ import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 export interface Category {
   _id: string;
   name: string;
-  description?: string;
+  description: string;
   image: string;
+  isActive: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -15,11 +16,9 @@ interface CategoriesState {
   currentCategory: Category | null;
   loading: boolean;
   error: string | null;
-  pagination: {
-    currentPage: number;
-    totalPages: number;
-    totalCategories: number;
-  };
+  totalCategories: number;
+  currentPage: number;
+  totalPages: number;
 }
 
 const initialState: CategoriesState = {
@@ -27,39 +26,17 @@ const initialState: CategoriesState = {
   currentCategory: null,
   loading: false,
   error: null,
-  pagination: {
-    currentPage: 1,
-    totalPages: 1,
-    totalCategories: 0,
-  },
+  totalCategories: 0,
+  currentPage: 1,
+  totalPages: 1,
 };
 
-export const fetchCategories = createAsyncThunk(
-  "categories/fetchCategories",
-  async (params: { page?: number; limit?: number } = {}) => {
-    const queryParams = new URLSearchParams();
-
-    if (params.page) queryParams.append("page", params.page.toString());
-    if (params.limit) queryParams.append("limit", params.limit.toString());
-
-    const response = await apiRequest(`/categories?${queryParams}`);
-    return response.data;
-  }
-);
-
-export const fetchCategory = createAsyncThunk(
-  "categories/fetchCategory",
-  async (categoryId: string) => {
-    const response = await apiRequest(`/categories/${categoryId}`);
-    return response.data;
-  }
-);
-
+// Create category
 export const createCategory = createAsyncThunk(
   "categories/createCategory",
   async (categoryData: {
     name: string;
-    description?: string;
+    description: string;
     image: string;
   }) => {
     const response = await apiRequest("/categories", {
@@ -70,6 +47,29 @@ export const createCategory = createAsyncThunk(
   }
 );
 
+// Get all categories
+export const fetchCategories = createAsyncThunk(
+  "categories/fetchCategories",
+  async (params: { page?: number; limit?: number } = {}) => {
+    const queryParams = new URLSearchParams();
+    if (params.page) queryParams.append("page", params.page.toString());
+    if (params.limit) queryParams.append("limit", params.limit.toString());
+
+    const response = await apiRequest(`/categories?${queryParams.toString()}`);
+    return response.data;
+  }
+);
+
+// Get single category
+export const fetchCategory = createAsyncThunk(
+  "categories/fetchCategory",
+  async (categoryId: string) => {
+    const response = await apiRequest(`/categories/${categoryId}`);
+    return response.data;
+  }
+);
+
+// Update category
 export const updateCategory = createAsyncThunk(
   "categories/updateCategory",
   async ({
@@ -87,16 +87,6 @@ export const updateCategory = createAsyncThunk(
   }
 );
 
-export const deleteCategory = createAsyncThunk(
-  "categories/deleteCategory",
-  async (categoryId: string) => {
-    await apiRequest(`/categories/${categoryId}`, {
-      method: "DELETE",
-    });
-    return categoryId;
-  }
-);
-
 const categoriesSlice = createSlice({
   name: "categories",
   initialState,
@@ -110,6 +100,20 @@ const categoriesSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+      // Create category
+      .addCase(createCategory.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(createCategory.fulfilled, (state, action) => {
+        state.loading = false;
+        state.categories.unshift(action.payload.category);
+      })
+      .addCase(createCategory.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || "Failed to create category";
+      })
+      // Fetch categories
       .addCase(fetchCategories.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -117,39 +121,28 @@ const categoriesSlice = createSlice({
       .addCase(fetchCategories.fulfilled, (state, action) => {
         state.loading = false;
         state.categories = action.payload.categories;
-        state.pagination = {
-          currentPage: action.payload.currentPage || 1,
-          totalPages: action.payload.totalPages || 1,
-          totalCategories: action.payload.totalCategories || 0,
-        };
+        state.totalCategories = action.payload.totalCategories;
+        state.currentPage = action.payload.currentPage;
+        state.totalPages = action.payload.totalPages;
       })
       .addCase(fetchCategories.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message || "Failed to fetch categories";
       })
+      // Fetch single category
       .addCase(fetchCategory.fulfilled, (state, action) => {
         state.currentCategory = action.payload.category;
       })
-      .addCase(createCategory.fulfilled, (state, action) => {
-        state.categories.unshift(action.payload.category);
-      })
+      // Update category
       .addCase(updateCategory.fulfilled, (state, action) => {
         const index = state.categories.findIndex(
-          (c) => c._id === action.payload.category._id
+          (category) => category._id === action.payload.category._id
         );
         if (index !== -1) {
           state.categories[index] = action.payload.category;
         }
         if (state.currentCategory?._id === action.payload.category._id) {
           state.currentCategory = action.payload.category;
-        }
-      })
-      .addCase(deleteCategory.fulfilled, (state, action) => {
-        state.categories = state.categories.filter(
-          (c) => c._id !== action.payload
-        );
-        if (state.currentCategory?._id === action.payload) {
-          state.currentCategory = null;
         }
       });
   },

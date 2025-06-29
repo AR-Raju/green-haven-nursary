@@ -2,9 +2,14 @@ import { apiRequest } from "@/lib/api";
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 
 export interface OrderItem {
-  product: string;
+  product: {
+    _id: string;
+    title: string;
+    price: number;
+    image: string;
+  };
   quantity: number;
-  price?: number;
+  price: number;
 }
 
 export interface Order {
@@ -20,9 +25,9 @@ export interface Order {
   };
   items: OrderItem[];
   totalAmount: number;
-  paymentMethod: "COD" | "STRIPE";
-  paymentStatus: "PENDING" | "PAID" | "FAILED";
   orderStatus: "PENDING" | "PROCESSING" | "SHIPPED" | "DELIVERED" | "CANCELLED";
+  paymentStatus: "PENDING" | "PAID" | "FAILED";
+  paymentMethod: "COD" | "CARD";
   createdAt: string;
   updatedAt: string;
 }
@@ -32,11 +37,9 @@ interface OrdersState {
   currentOrder: Order | null;
   loading: boolean;
   error: string | null;
-  pagination: {
-    currentPage: number;
-    totalPages: number;
-    totalOrders: number;
-  };
+  totalOrders: number;
+  currentPage: number;
+  totalPages: number;
 }
 
 const initialState: OrdersState = {
@@ -44,13 +47,12 @@ const initialState: OrdersState = {
   currentOrder: null,
   loading: false,
   error: null,
-  pagination: {
-    currentPage: 1,
-    totalPages: 1,
-    totalOrders: 0,
-  },
+  totalOrders: 0,
+  currentPage: 1,
+  totalPages: 1,
 };
 
+// Create order
 export const createOrder = createAsyncThunk(
   "orders/createOrder",
   async (orderData: {
@@ -63,8 +65,11 @@ export const createOrder = createAsyncThunk(
       state: string;
       zipCode: string;
     };
-    items: OrderItem[];
-    paymentMethod: "COD" | "STRIPE";
+    items: Array<{
+      product: string;
+      quantity: number;
+    }>;
+    paymentMethod: string;
   }) => {
     const response = await apiRequest("/orders", {
       method: "POST",
@@ -74,6 +79,7 @@ export const createOrder = createAsyncThunk(
   }
 );
 
+// Get all orders
 export const fetchOrders = createAsyncThunk(
   "orders/fetchOrders",
   async (
@@ -84,17 +90,17 @@ export const fetchOrders = createAsyncThunk(
     } = {}
   ) => {
     const queryParams = new URLSearchParams();
-
     if (params.page) queryParams.append("page", params.page.toString());
     if (params.limit) queryParams.append("limit", params.limit.toString());
     if (params.orderStatus)
       queryParams.append("orderStatus", params.orderStatus);
 
-    const response = await apiRequest(`/orders?${queryParams}`);
+    const response = await apiRequest(`/orders?${queryParams.toString()}`);
     return response.data;
   }
 );
 
+// Get single order
 export const fetchOrder = createAsyncThunk(
   "orders/fetchOrder",
   async (orderId: string) => {
@@ -103,6 +109,7 @@ export const fetchOrder = createAsyncThunk(
   }
 );
 
+// Update order status
 export const updateOrderStatus = createAsyncThunk(
   "orders/updateOrderStatus",
   async ({
@@ -126,28 +133,29 @@ const ordersSlice = createSlice({
   name: "orders",
   initialState,
   reducers: {
-    clearCurrentOrder: (state) => {
-      state.currentOrder = null;
-    },
     clearError: (state) => {
       state.error = null;
+    },
+    clearCurrentOrder: (state) => {
+      state.currentOrder = null;
     },
   },
   extraReducers: (builder) => {
     builder
+      // Create order
       .addCase(createOrder.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
       .addCase(createOrder.fulfilled, (state, action) => {
         state.loading = false;
-        state.currentOrder = action.payload.order;
         state.orders.unshift(action.payload.order);
       })
       .addCase(createOrder.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message || "Failed to create order";
       })
+      // Fetch orders
       .addCase(fetchOrders.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -155,22 +163,22 @@ const ordersSlice = createSlice({
       .addCase(fetchOrders.fulfilled, (state, action) => {
         state.loading = false;
         state.orders = action.payload.orders;
-        state.pagination = {
-          currentPage: action.payload.currentPage || 1,
-          totalPages: action.payload.totalPages || 1,
-          totalOrders: action.payload.totalOrders || 0,
-        };
+        state.totalOrders = action.payload.totalOrders;
+        state.currentPage = action.payload.currentPage;
+        state.totalPages = action.payload.totalPages;
       })
       .addCase(fetchOrders.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message || "Failed to fetch orders";
       })
+      // Fetch single order
       .addCase(fetchOrder.fulfilled, (state, action) => {
         state.currentOrder = action.payload.order;
       })
+      // Update order status
       .addCase(updateOrderStatus.fulfilled, (state, action) => {
         const index = state.orders.findIndex(
-          (o) => o._id === action.payload.order._id
+          (order) => order._id === action.payload.order._id
         );
         if (index !== -1) {
           state.orders[index] = action.payload.order;
@@ -182,5 +190,5 @@ const ordersSlice = createSlice({
   },
 });
 
-export const { clearCurrentOrder, clearError } = ordersSlice.actions;
+export const { clearError, clearCurrentOrder } = ordersSlice.actions;
 export default ordersSlice.reducer;

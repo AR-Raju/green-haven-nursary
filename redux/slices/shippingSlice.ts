@@ -5,7 +5,6 @@ export interface ShippingZone {
   _id: string;
   name: string;
   regions: string[];
-  isActive: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -18,7 +17,6 @@ export interface ShippingMethod {
   cost: number;
   estimatedDays: string;
   freeShippingThreshold?: number;
-  isActive: boolean;
   createdAt: string;
   updatedAt: string;
 }

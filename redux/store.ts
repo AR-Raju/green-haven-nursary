@@ -15,11 +15,11 @@ import wishlistReducer from "./slices/wishlistSlice";
 export const store = configureStore({
   reducer: {
     auth: authReducer,
-    users: usersReducer,
     products: productsReducer,
     categories: categoriesReducer,
     cart: cartReducer,
     orders: ordersReducer,
+    users: usersReducer,
     wishlist: wishlistReducer,
     reviews: reviewsReducer,
     blog: blogReducer,

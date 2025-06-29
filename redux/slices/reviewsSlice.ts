@@ -3,16 +3,15 @@ import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 
 export interface Review {
   _id: string;
-  userId: string;
-  userName: string;
-  userEmail: string;
-  productId: string;
+  user: {
+    _id: string;
+    name: string;
+  };
+  product: string;
   rating: number;
   comment: string;
   status: "pending" | "approved" | "rejected";
   adminResponse?: string;
-  helpfulVotes: number;
-  verifiedPurchase: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -21,22 +20,18 @@ interface ReviewsState {
   reviews: Review[];
   loading: boolean;
   error: string | null;
-  pagination: {
-    currentPage: number;
-    totalPages: number;
-    totalReviews: number;
-  };
+  totalReviews: number;
+  currentPage: number;
+  totalPages: number;
 }
 
 const initialState: ReviewsState = {
   reviews: [],
   loading: false,
   error: null,
-  pagination: {
-    currentPage: 1,
-    totalPages: 1,
-    totalReviews: 0,
-  },
+  totalReviews: 0,
+  currentPage: 1,
+  totalPages: 1,
 };
 
 // Create review
@@ -67,13 +62,12 @@ export const fetchReviews = createAsyncThunk(
     } = {}
   ) => {
     const queryParams = new URLSearchParams();
-
     if (params.productId) queryParams.append("productId", params.productId);
     if (params.status) queryParams.append("status", params.status);
     if (params.page) queryParams.append("page", params.page.toString());
     if (params.limit) queryParams.append("limit", params.limit.toString());
 
-    const response = await apiRequest(`/reviews?${queryParams}`);
+    const response = await apiRequest(`/reviews?${queryParams.toString()}`);
     return response.data;
   }
 );
@@ -87,7 +81,7 @@ export const updateReviewStatus = createAsyncThunk(
     adminResponse,
   }: {
     reviewId: string;
-    status: "approved" | "rejected";
+    status: string;
     adminResponse?: string;
   }) => {
     const response = await apiRequest(`/reviews/${reviewId}`, {
@@ -129,11 +123,9 @@ const reviewsSlice = createSlice({
       .addCase(fetchReviews.fulfilled, (state, action) => {
         state.loading = false;
         state.reviews = action.payload.reviews;
-        state.pagination = {
-          currentPage: action.payload.currentPage || 1,
-          totalPages: action.payload.totalPages || 1,
-          totalReviews: action.payload.totalReviews || 0,
-        };
+        state.totalReviews = action.payload.totalReviews;
+        state.currentPage = action.payload.currentPage;
+        state.totalPages = action.payload.totalPages;
       })
       .addCase(fetchReviews.rejected, (state, action) => {
         state.loading = false;
@@ -142,7 +134,7 @@ const reviewsSlice = createSlice({
       // Update review status
       .addCase(updateReviewStatus.fulfilled, (state, action) => {
         const index = state.reviews.findIndex(
-          (r) => r._id === action.payload.review._id
+          (review) => review._id === action.payload.review._id
         );
         if (index !== -1) {
           state.reviews[index] = action.payload.review;

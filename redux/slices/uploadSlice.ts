@@ -1,16 +1,15 @@
-import { uploadRequest } from "@/lib/api";
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 
 interface UploadState {
   uploading: boolean;
   error: string | null;
-  uploadedUrls: string[];
+  uploadedFiles: string[];
 }
 
 const initialState: UploadState = {
   uploading: false,
   error: null,
-  uploadedUrls: [],
+  uploadedFiles: [],
 };
 
 // Upload image
@@ -20,8 +19,18 @@ export const uploadImage = createAsyncThunk(
     const formData = new FormData();
     formData.append("image", file);
 
-    const response = await uploadRequest("/upload", formData);
-    return response.data;
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/upload`, {
+      method: "POST",
+      body: formData,
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "Upload failed");
+    }
+
+    return data.data;
   }
 );
 
@@ -32,8 +41,8 @@ const uploadSlice = createSlice({
     clearError: (state) => {
       state.error = null;
     },
-    clearUploadedUrls: (state) => {
-      state.uploadedUrls = [];
+    clearUploadedFiles: (state) => {
+      state.uploadedFiles = [];
     },
   },
   extraReducers: (builder) => {
@@ -44,7 +53,7 @@ const uploadSlice = createSlice({
       })
       .addCase(uploadImage.fulfilled, (state, action) => {
         state.uploading = false;
-        state.uploadedUrls.push(action.payload.url);
+        state.uploadedFiles.push(action.payload.url);
       })
       .addCase(uploadImage.rejected, (state, action) => {
         state.uploading = false;
@@ -53,5 +62,5 @@ const uploadSlice = createSlice({
   },
 });
 
-export const { clearError, clearUploadedUrls } = uploadSlice.actions;
+export const { clearError, clearUploadedFiles } = uploadSlice.actions;
 export default uploadSlice.reducer;

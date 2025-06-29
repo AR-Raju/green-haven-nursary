@@ -1,18 +1,32 @@
 import { apiRequest } from "@/lib/api";
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import type { User } from "./authSlice";
+
+export interface User {
+  _id: string;
+  name: string;
+  email: string;
+  role: "user" | "admin" | "vendor";
+  phone?: string;
+  address?: {
+    street: string;
+    city: string;
+    state: string;
+    zipCode: string;
+    country: string;
+  };
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
 
 interface UsersState {
   users: User[];
   currentUser: User | null;
   loading: boolean;
   error: string | null;
-  pagination: {
-    currentPage: number;
-    totalPages: number;
-    totalUsers: number;
-    limit: number;
-  };
+  totalUsers: number;
+  currentPage: number;
+  totalPages: number;
 }
 
 const initialState: UsersState = {
@@ -20,12 +34,9 @@ const initialState: UsersState = {
   currentUser: null,
   loading: false,
   error: null,
-  pagination: {
-    currentPage: 1,
-    totalPages: 1,
-    totalUsers: 0,
-    limit: 10,
-  },
+  totalUsers: 0,
+  currentPage: 1,
+  totalPages: 1,
 };
 
 // Get all users (Admin only)
@@ -39,12 +50,11 @@ export const fetchUsers = createAsyncThunk(
     } = {}
   ) => {
     const queryParams = new URLSearchParams();
-
     if (params.page) queryParams.append("page", params.page.toString());
     if (params.limit) queryParams.append("limit", params.limit.toString());
     if (params.searchTerm) queryParams.append("searchTerm", params.searchTerm);
 
-    const response = await apiRequest(`/users?${queryParams}`);
+    const response = await apiRequest(`/users?${queryParams.toString()}`);
     return response.data;
   }
 );
@@ -77,6 +87,9 @@ const usersSlice = createSlice({
     clearError: (state) => {
       state.error = null;
     },
+    setCurrentUser: (state, action) => {
+      state.currentUser = action.payload;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -88,12 +101,9 @@ const usersSlice = createSlice({
       .addCase(fetchUsers.fulfilled, (state, action) => {
         state.loading = false;
         state.users = action.payload.users;
-        state.pagination = {
-          currentPage: action.payload.currentPage,
-          totalPages: action.payload.totalPages,
-          totalUsers: action.payload.totalUsers,
-          limit: action.payload.limit,
-        };
+        state.totalUsers = action.payload.totalUsers;
+        state.currentPage = action.payload.currentPage;
+        state.totalPages = action.payload.totalPages;
       })
       .addCase(fetchUsers.rejected, (state, action) => {
         state.loading = false;
@@ -106,7 +116,7 @@ const usersSlice = createSlice({
       // Update user
       .addCase(updateUser.fulfilled, (state, action) => {
         const index = state.users.findIndex(
-          (u) => u._id === action.payload.user._id
+          (user) => user._id === action.payload.user._id
         );
         if (index !== -1) {
           state.users[index] = action.payload.user;
@@ -118,5 +128,5 @@ const usersSlice = createSlice({
   },
 });
 
-export const { clearError } = usersSlice.actions;
+export const { clearError, setCurrentUser } = usersSlice.actions;
 export default usersSlice.reducer;
