@@ -120,7 +120,7 @@ const categoriesSlice = createSlice({
       })
       .addCase(fetchCategories.fulfilled, (state, action) => {
         state.loading = false;
-        state.categories = action.payload.categories;
+        state.categories = action.payload;
         state.totalCategories = action.payload.totalCategories;
         state.currentPage = action.payload.currentPage;
         state.totalPages = action.payload.totalPages;

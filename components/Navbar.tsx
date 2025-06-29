@@ -254,12 +254,12 @@ export default function Navbar() {
               <Link href="/dashboard/wishlist">
                 <Button variant="ghost" size="sm" className="relative">
                   <Heart className="h-4 w-4" />
-                  {wishlistItems.length > 0 && (
+                  {wishlistItems?.length > 0 && (
                     <Badge
                       variant="destructive"
                       className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 text-xs"
                     >
-                      {wishlistItems.length}
+                      {wishlistItems?.length}
                     </Badge>
                   )}
                 </Button>
@@ -296,14 +296,12 @@ export default function Navbar() {
                       </div>
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    {(user.role === "admin" || user.role === "vendor") && (
-                      <DropdownMenuItem asChild>
-                        <Link href="/dashboard">
-                          <LayoutDashboard className="mr-2 h-4 w-4" />
-                          <span>Dashboard</span>
-                        </Link>
-                      </DropdownMenuItem>
-                    )}
+                    <DropdownMenuItem asChild>
+                      <Link href="/dashboard">
+                        <LayoutDashboard className="mr-2 h-4 w-4" />
+                        <span>Dashboard</span>
+                      </Link>
+                    </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <Link href="/dashboard/profile">
                         <User className="mr-2 h-4 w-4" />
