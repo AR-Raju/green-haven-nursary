@@ -467,10 +467,10 @@ export default function LoginPage() {
                   </Button>
                 </form>
 
-                <Separator />
+                {/* <Separator /> */}
 
                 {/* Social Register */}
-                <div className="space-y-3">
+                {/* <div className="space-y-3">
                   <p className="text-sm text-center text-gray-600">
                     Or sign up with
                   </p>
@@ -507,7 +507,7 @@ export default function LoginPage() {
                       Facebook
                     </Button>
                   </div>
-                </div>
+                </div> */}
               </TabsContent>
             </Tabs>
 
