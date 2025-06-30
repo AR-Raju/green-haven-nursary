@@ -20,7 +20,11 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import type { Product } from "@/redux/slices/productsSlice";
-import { createProduct, updateProduct } from "@/redux/slices/productsSlice";
+import {
+  createProduct,
+  fetchProducts,
+  updateProduct,
+} from "@/redux/slices/productsSlice";
 import type { AppDispatch, RootState } from "@/redux/store";
 import type React from "react";
 import { useEffect, useState } from "react";
@@ -124,15 +128,17 @@ export default function ProductModal({
       console.log("Submitting product data:", productData);
 
       if (product) {
-        await dispatch(
-          updateProduct({ productId: product._id, productData: productData })
-        ).unwrap();
+        await dispatch(updateProduct({ id: product._id, ...productData }))
+          .unwrap()
+          .then(() => dispatch(fetchProducts({})));
         toast({
           title: "Product Updated",
           description: "Product has been successfully updated.",
         });
       } else {
-        await dispatch(createProduct(productData)).unwrap();
+        await dispatch(createProduct(productData))
+          .unwrap()
+          .then(() => dispatch(fetchProducts({})));
         toast({
           title: "Product Created",
           description: "Product has been successfully created.",

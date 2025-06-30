@@ -61,13 +61,13 @@ export default function CategoriesPage() {
     if (userData) {
       setUser(JSON.parse(userData));
     }
-    dispatch(fetchCategories());
+    dispatch(fetchCategories({}));
   }, [dispatch]);
 
-  const filteredCategories = categories.filter(
+  const filteredCategories = categories?.filter(
     (category) =>
-      category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (category.description &&
+      category?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (category?.description &&
         category.description.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
@@ -89,7 +89,9 @@ export default function CategoriesPage() {
   const confirmDelete = async () => {
     if (selectedCategory) {
       try {
-        await dispatch(deleteCategory(selectedCategory._id)).unwrap();
+        await dispatch(deleteCategory(selectedCategory._id))
+          .unwrap()
+          .then(() => dispatch(fetchCategories({})));
         toast({
           title: "Category Deleted",
           description: "Category has been successfully deleted.",

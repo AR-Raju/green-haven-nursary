@@ -72,16 +72,21 @@ export const fetchCategory = createAsyncThunk(
 // Update category
 export const updateCategory = createAsyncThunk(
   "categories/updateCategory",
-  async ({
-    categoryId,
-    categoryData,
-  }: {
-    categoryId: string;
-    categoryData: Partial<Category>;
-  }) => {
-    const response = await apiRequest(`/categories/${categoryId}`, {
+  async ({ id, ...categoryData }: { id: string & Partial<Category> }) => {
+    const response = await apiRequest(`/categories/${id}`, {
       method: "PATCH",
       body: JSON.stringify(categoryData),
+    });
+    return response.data;
+  }
+);
+
+// Delete category
+export const deleteCategory = createAsyncThunk(
+  "categories/deleteCategory",
+  async (categoryId: string) => {
+    const response = await apiRequest(`/categories/${categoryId}`, {
+      method: "DELETE",
     });
     return response.data;
   }
@@ -136,12 +141,12 @@ const categoriesSlice = createSlice({
       // Update category
       .addCase(updateCategory.fulfilled, (state, action) => {
         const index = state.categories.findIndex(
-          (category) => category._id === action.payload.category._id
+          (category) => category?._id === action.payload.category?._id
         );
         if (index !== -1) {
           state.categories[index] = action.payload.category;
         }
-        if (state.currentCategory?._id === action.payload.category._id) {
+        if (state.currentCategory?._id === action.payload.category?._id) {
           state.currentCategory = action.payload.category;
         }
       });

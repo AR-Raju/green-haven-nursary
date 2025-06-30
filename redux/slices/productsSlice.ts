@@ -9,16 +9,18 @@ export interface Product {
   quantity: number;
   image: string;
   images?: string[];
-  category: {
-    _id: string;
-    name: string;
-  };
+  category:
+    | {
+        _id: string;
+        name: string;
+      }
+    | string;
   rating: number;
   reviewCount: number;
   inStock: boolean;
   isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 interface ProductsState {
@@ -131,22 +133,36 @@ export const updateProduct = createAsyncThunk(
   "products/updateProduct",
   async (
     {
-      productId,
-      productData,
+      id,
+      ...productData
     }: {
-      productId: string;
-      productData: Partial<Product>;
+      id: string & Partial<Product>;
     },
     { rejectWithValue }
   ) => {
     try {
-      const response = await apiRequest(`/products/${productId}`, {
+      const response = await apiRequest(`/products/${id}`, {
         method: "PATCH",
         body: JSON.stringify(productData),
       });
       return response.data;
     } catch (error: any) {
       return rejectWithValue(error.message || "Failed to update product");
+    }
+  }
+);
+
+// Delete product
+export const deleteProduct = createAsyncThunk(
+  "products/deleteProduct",
+  async (productId: string, { rejectWithValue }) => {
+    try {
+      const response = await apiRequest(`/products/${productId}`, {
+        method: "DELETE",
+      });
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(error.message || "Failed to delete product");
     }
   }
 );

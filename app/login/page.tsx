@@ -188,6 +188,27 @@ export default function LoginPage() {
 
               {/* Login Tab */}
               <TabsContent value="login" className="space-y-4">
+                {/* Demo Credentials */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">
+                    Quick Login (Demo)
+                  </Label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {demoCredentials.map((cred) => (
+                      <Button
+                        key={cred.role}
+                        variant="outline"
+                        size="sm"
+                        onClick={() => fillDemoCredentials(cred)}
+                        className="justify-center"
+                      >
+                        {/* <User className="h-4 w-4 mr-2" />
+                        Demo{" "} */}
+                        {cred.role.charAt(0).toUpperCase() + cred.role.slice(1)}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
                 <form onSubmit={handleLogin} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
@@ -259,7 +280,7 @@ export default function LoginPage() {
                 <Separator />
 
                 {/* Demo Credentials */}
-                <div className="space-y-3">
+                {/* <div className="space-y-3">
                   <p className="text-sm text-center text-gray-600">
                     Try demo accounts:
                   </p>
@@ -278,12 +299,12 @@ export default function LoginPage() {
                       </Button>
                     ))}
                   </div>
-                </div>
+                </div> */}
 
-                <Separator />
+                {/* <Separator /> */}
 
                 {/* Social Login */}
-                <div className="space-y-3">
+                {/* <div className="space-y-3">
                   <p className="text-sm text-center text-gray-600">
                     Or continue with
                   </p>
@@ -320,7 +341,7 @@ export default function LoginPage() {
                       Facebook
                     </Button>
                   </div>
-                </div>
+                </div> */}
               </TabsContent>
 
               {/* Register Tab */}
