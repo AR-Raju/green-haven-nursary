@@ -38,6 +38,8 @@ interface ProductsState {
     sortOrder: "asc" | "desc";
     minPrice: number;
     maxPrice: number;
+    rating: number;
+    inStock?: boolean;
   };
 }
 
@@ -56,6 +58,8 @@ const initialState: ProductsState = {
     sortOrder: "desc",
     minPrice: 0,
     maxPrice: 1000,
+    rating: 0,
+    inStock: undefined, // Optional filter for in-stock products
   },
 };
 
@@ -178,6 +182,9 @@ const productsSlice = createSlice({
       state.filters = { ...state.filters, ...action.payload };
       state.currentPage = 1; // Reset to first page when filters change
     },
+    setCurrentPage: (state, action) => {
+      state.currentPage = action.payload;
+    },
     clearFilters: (state) => {
       state.filters = initialState.filters;
       state.currentPage = 1;
@@ -253,6 +260,11 @@ const productsSlice = createSlice({
   },
 });
 
-export const { clearError, clearFilters, setFilters, clearCurrentProduct } =
-  productsSlice.actions;
+export const {
+  clearError,
+  clearFilters,
+  setFilters,
+  setCurrentPage,
+  clearCurrentProduct,
+} = productsSlice.actions;
 export default productsSlice.reducer;

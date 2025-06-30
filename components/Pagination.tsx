@@ -1,20 +1,26 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { setCurrentPage } from "@/redux/slices/productsSlice";
-import type { AppDispatch, RootState } from "@/redux/store";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useDispatch, useSelector } from "react-redux";
 
-export default function Pagination() {
-  const dispatch = useDispatch<AppDispatch>();
-  const { currentPage, totalPages, totalProducts } = useSelector(
-    (state: RootState) => state.products
-  );
+interface PaginationProps {
+  currentPage: number;
+  totalPages: number;
+  totalProducts: number;
+  productsPerPage: number;
+  onPageChange: (page: number) => void;
+}
 
+export default function Pagination({
+  currentPage,
+  totalPages,
+  totalProducts,
+  productsPerPage,
+  onPageChange,
+}: PaginationProps) {
   const handlePageChange = (page: number) => {
     if (page >= 1 && page <= totalPages) {
-      dispatch(setCurrentPage(page));
+      onPageChange(page);
     }
   };
 
@@ -50,11 +56,13 @@ export default function Pagination() {
     return rangeWithDots;
   };
 
+  const startProduct = (currentPage - 1) * productsPerPage + 1;
+  const endProduct = Math.min(currentPage * productsPerPage, totalProducts);
+
   return (
     <div className="flex flex-col items-center space-y-4">
       <div className="text-sm text-muted-foreground">
-        Showing {(currentPage - 1) * 12 + 1} to{" "}
-        {Math.min(currentPage * 12, totalProducts)} of {totalProducts} products
+        Showing {startProduct} to {endProduct} of {totalProducts} products
       </div>
 
       <div className="flex items-center space-x-2">
