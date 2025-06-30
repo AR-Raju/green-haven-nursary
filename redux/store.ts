@@ -8,7 +8,6 @@ import ordersReducer from "./slices/ordersSlice";
 import productsReducer from "./slices/productsSlice";
 import reviewsReducer from "./slices/reviewsSlice";
 import shippingReducer from "./slices/shippingSlice";
-import uploadReducer from "./slices/uploadSlice";
 import usersReducer from "./slices/usersSlice";
 import wishlistReducer from "./slices/wishlistSlice";
 
@@ -25,7 +24,6 @@ export const store = configureStore({
     blog: blogReducer,
     shipping: shippingReducer,
     analytics: analyticsReducer,
-    upload: uploadReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

@@ -1,22 +1,22 @@
-"use client"
+"use client";
 
-import type React from "react"
-
-import { useState, useRef } from "react"
-import Image from "next/image"
-import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
-import { Progress } from "@/components/ui/progress"
-import { Upload, X, ImageIcon } from "lucide-react"
-import { useToast } from "@/hooks/use-toast"
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
+import { useToast } from "@/hooks/use-toast";
+import { uploadAPI } from "@/lib/api";
+import { ImageIcon, Upload, X } from "lucide-react";
+import Image from "next/image";
+import type React from "react";
+import { useRef, useState } from "react";
 
 interface ImageUploadProps {
-  value?: string
-  onChange: (url: string) => void
-  onRemove: () => void
-  disabled?: boolean
-  label?: string
-  required?: boolean
+  value?: string;
+  onChange: (url: string) => void;
+  onRemove: () => void;
+  disabled?: boolean;
+  label?: string;
+  required?: boolean;
 }
 
 export default function ImageUpload({
@@ -27,14 +27,16 @@ export default function ImageUpload({
   label = "Image",
   required = false,
 }: ImageUploadProps) {
-  const [uploading, setUploading] = useState(false)
-  const [uploadProgress, setUploadProgress] = useState(0)
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const { toast } = useToast()
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
 
-  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
+  const handleFileSelect = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
 
     // Validate file type
     if (!file.type.startsWith("image/")) {
@@ -42,8 +44,8 @@ export default function ImageUpload({
         title: "Invalid File Type",
         description: "Please select an image file (JPG, PNG, GIF, etc.)",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
     // Validate file size (max 32MB for ImageBB)
@@ -52,103 +54,104 @@ export default function ImageUpload({
         title: "File Too Large",
         description: "Please select an image smaller than 32MB",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
-    await uploadFile(file)
-  }
+    await uploadFile(file);
+  };
 
   const uploadFile = async (file: File) => {
-    setUploading(true)
-    setUploadProgress(0)
+    setUploading(true);
+    setUploadProgress(0);
 
     try {
       // Simulate progress for better UX
       const progressInterval = setInterval(() => {
         setUploadProgress((prev) => {
           if (prev >= 90) {
-            clearInterval(progressInterval)
-            return 90
+            clearInterval(progressInterval);
+            return 90;
           }
-          return prev + 10
-        })
-      }, 200)
+          return prev + 10;
+        });
+      }, 200);
 
-      const formData = new FormData()
-      formData.append("image", file)
+      console.log("Starting upload for file:", file.name);
+      const response = await uploadAPI.uploadImage(file);
 
-      const response = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      })
+      clearInterval(progressInterval);
+      setUploadProgress(100);
 
-      clearInterval(progressInterval)
-      setUploadProgress(100)
+      console.log("Upload response:", response);
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || "Upload failed")
-      }
-
-      const data = await response.json()
-
-      if (data.success) {
-        onChange(data.url)
-        toast({
-          title: "Upload Successful",
-          description: "Image has been uploaded successfully",
-        })
+      // Handle different response structures
+      let imageUrl = "";
+      if (response.success && response.data?.url) {
+        imageUrl = response.data.url;
+      } else if (response.data?.display_url) {
+        imageUrl = response.data.display_url;
+      } else if (response.url) {
+        imageUrl = response.url;
+      } else if (response.data?.url) {
+        imageUrl = response.data.url;
       } else {
-        throw new Error(data.error || "Upload failed")
+        throw new Error("No image URL found in response");
       }
-    } catch (error) {
-      console.error("Upload error:", error)
+
+      onChange(imageUrl);
+      toast({
+        title: "Upload Successful",
+        description: "Image has been uploaded successfully",
+      });
+    } catch (error: any) {
+      console.error("Upload error:", error);
       toast({
         title: "Upload Failed",
-        description: error instanceof Error ? error.message : "Failed to upload image. Please try again.",
+        description:
+          error.message || "Failed to upload image. Please try again.",
         variant: "destructive",
-      })
+      });
     } finally {
-      setUploading(false)
-      setUploadProgress(0)
+      setUploading(false);
+      setUploadProgress(0);
       if (fileInputRef.current) {
-        fileInputRef.current.value = ""
+        fileInputRef.current.value = "";
       }
     }
-  }
+  };
 
   const handleRemove = () => {
-    onRemove()
+    onRemove();
     if (fileInputRef.current) {
-      fileInputRef.current.value = ""
+      fileInputRef.current.value = "";
     }
-  }
+  };
 
   const handleDrop = async (event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault()
-    event.stopPropagation()
+    event.preventDefault();
+    event.stopPropagation();
 
-    if (disabled || uploading) return
+    if (disabled || uploading) return;
 
-    const files = Array.from(event.dataTransfer.files)
-    const imageFile = files.find((file) => file.type.startsWith("image/"))
+    const files = Array.from(event.dataTransfer.files);
+    const imageFile = files.find((file) => file.type.startsWith("image/"));
 
     if (imageFile) {
-      await uploadFile(imageFile)
+      await uploadFile(imageFile);
     } else {
       toast({
         title: "Invalid File Type",
         description: "Please drop an image file",
         variant: "destructive",
-      })
+      });
     }
-  }
+  };
 
   const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault()
-    event.stopPropagation()
-  }
+    event.preventDefault();
+    event.stopPropagation();
+  };
 
   return (
     <div className="space-y-2">
@@ -161,7 +164,12 @@ export default function ImageUpload({
         {value && !uploading && (
           <div className="relative group">
             <div className="relative w-full h-48 rounded-lg overflow-hidden border">
-              <Image src={value || "/placeholder.svg"} alt="Uploaded image" fill className="object-cover" />
+              <Image
+                src={value || "/placeholder.svg"}
+                alt="Uploaded image"
+                fill
+                className="object-cover"
+              />
               <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-200 flex items-center justify-center">
                 <Button
                   type="button"
@@ -183,11 +191,15 @@ export default function ImageUpload({
         {!value && (
           <div
             className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-              disabled ? "border-gray-200 bg-gray-50" : "border-gray-300 hover:border-gray-400 cursor-pointer"
+              disabled
+                ? "border-gray-200 bg-gray-50"
+                : "border-gray-300 hover:border-gray-400 cursor-pointer"
             }`}
             onDrop={handleDrop}
             onDragOver={handleDragOver}
-            onClick={() => !disabled && !uploading && fileInputRef.current?.click()}
+            onClick={() =>
+              !disabled && !uploading && fileInputRef.current?.click()
+            }
           >
             {uploading ? (
               <div className="space-y-4">
@@ -196,8 +208,13 @@ export default function ImageUpload({
                 </div>
                 <div className="space-y-2">
                   <p className="text-sm font-medium">Uploading image...</p>
-                  <Progress value={uploadProgress} className="w-full max-w-xs mx-auto" />
-                  <p className="text-xs text-muted-foreground">{uploadProgress}% complete</p>
+                  <Progress
+                    value={uploadProgress}
+                    className="w-full max-w-xs mx-auto"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {uploadProgress}% complete
+                  </p>
                 </div>
               </div>
             ) : (
@@ -206,8 +223,12 @@ export default function ImageUpload({
                   <ImageIcon className="h-6 w-6 text-gray-400" />
                 </div>
                 <div className="space-y-2">
-                  <p className="text-sm font-medium">Drop an image here, or click to select</p>
-                  <p className="text-xs text-muted-foreground">Supports JPG, PNG, GIF up to 32MB</p>
+                  <p className="text-sm font-medium">
+                    Drop an image here, or click to select
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Supports JPG, PNG, GIF up to 32MB
+                  </p>
                 </div>
                 <Button
                   type="button"
@@ -226,7 +247,12 @@ export default function ImageUpload({
         {/* Replace Image Button */}
         {value && !uploading && (
           <div className="flex justify-center">
-            <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} disabled={disabled}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={disabled}
+            >
               <Upload className="h-4 w-4 mr-2" />
               Replace Image
             </Button>
@@ -244,5 +270,5 @@ export default function ImageUpload({
         />
       </div>
     </div>
-  )
+  );
 }

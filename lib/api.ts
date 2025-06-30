@@ -41,3 +41,44 @@ export const apiRequest = async (
     throw error;
   }
 };
+
+// API upload image
+export const uploadAPI = {
+  uploadImage: async (file: File) => {
+    const token = getAuthToken();
+    const formData = new FormData();
+    formData.append("image", file);
+
+    try {
+      console.log("Uploading image to:", API_BASE_URL);
+      const response = await fetch(`${API_BASE_URL}/upload`, {
+        method: "POST",
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: formData,
+      });
+
+      const data = await response.json();
+      console.log("Upload response:", data);
+
+      if (!response.ok) {
+        throw new Error(
+          data?.error ||
+            data?.message ||
+            `Upload failed: ${response.statusText}`
+        );
+      }
+
+      return data;
+    } catch (error: any) {
+      console.error("Upload error:", error);
+      throw new Error(error.message || "Upload failed");
+    }
+  },
+
+  uploadMultipleImages: async (files: File[]) => {
+    const uploadPromises = files.map((file) => uploadAPI.uploadImage(file));
+    return Promise.allSettled(uploadPromises);
+  },
+};
