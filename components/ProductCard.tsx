@@ -43,7 +43,7 @@ export default function ProductCard({ product }: ProductCardProps) {
 
   return (
     <Link href={`/products/${product._id}`}>
-      <Card className="group cursor-pointer transition-all duration-200 hover:shadow-lg w-60">
+      <Card className="group cursor-pointer transition-all duration-200 hover:shadow-lg md:w-60">
         <CardContent className="p-3">
           <div className="relative aspect-[4/3] overflow-hidden rounded-md">
             <Image
@@ -99,7 +99,7 @@ export default function ProductCard({ product }: ProductCardProps) {
                 ${product.price.toFixed(2)}
               </span>
               <Badge variant="outline" className="text-xs">
-                {product.category.name}
+                {product.category?.name}
               </Badge>
             </div>
           </div>
