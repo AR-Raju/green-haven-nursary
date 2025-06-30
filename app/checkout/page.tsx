@@ -139,11 +139,11 @@ export default function CheckoutPage() {
       };
 
       const result = await dispatch(createOrder(orderData)).unwrap();
-      setCurrentOrderId(result.order._id);
+      setCurrentOrderId(result._id);
 
       if (formData.paymentMethod === "STRIPE") {
         // Create payment intent for Stripe
-        await createPaymentIntent(result.order._id);
+        await createPaymentIntent(result._id);
       } else {
         // COD order - complete immediately
         dispatch(clearCart());

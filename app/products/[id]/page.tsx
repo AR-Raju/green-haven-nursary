@@ -157,7 +157,7 @@ export default function ProductDetailPage() {
 
   const images = product.image ? [product.image] : ["/placeholder.svg"];
   const averageRating =
-    reviews.length > 0
+    reviews?.length > 0
       ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length
       : 0;
 
@@ -225,7 +225,7 @@ export default function ProductDetailPage() {
                   ))}
                 </div>
                 <span className="text-sm text-muted-foreground">
-                  ({reviews.length} reviews)
+                  ({reviews?.length} reviews)
                 </span>
               </div>
 
