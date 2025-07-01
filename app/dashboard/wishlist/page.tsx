@@ -18,131 +18,70 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
-const mockWishlistItems = [
-  {
-    id: "1",
-    title: "Monstera Deliciosa",
-    price: 45.99,
-    originalPrice: 59.99,
-    image: "/placeholder.svg?height=200&width=200",
-    category: "Indoor Plants",
-    rating: 4.8,
-    reviews: 124,
-    inStock: true,
-    discount: 23,
-    addedDate: "2024-01-15",
-  },
-  {
-    id: "2",
-    title: "Fiddle Leaf Fig",
-    price: 89.99,
-    originalPrice: 99.99,
-    image: "/placeholder.svg?height=200&width=200",
-    category: "Indoor Plants",
-    rating: 4.6,
-    reviews: 89,
-    inStock: true,
-    discount: 10,
-    addedDate: "2024-01-12",
-  },
-  {
-    id: "3",
-    title: "Snake Plant",
-    price: 29.99,
-    originalPrice: 34.99,
-    image: "/placeholder.svg?height=200&width=200",
-    category: "Indoor Plants",
-    rating: 4.9,
-    reviews: 156,
-    inStock: false,
-    discount: 14,
-    addedDate: "2024-01-10",
-  },
-  {
-    id: "4",
-    title: "Peace Lily",
-    price: 34.99,
-    originalPrice: 39.99,
-    image: "/placeholder.svg?height=200&width=200",
-    category: "Indoor Plants",
-    rating: 4.7,
-    reviews: 92,
-    inStock: true,
-    discount: 13,
-    addedDate: "2024-01-08",
-  },
-  {
-    id: "5",
-    title: "Rubber Plant",
-    price: 52.99,
-    originalPrice: 62.99,
-    image: "/placeholder.svg?height=200&width=200",
-    category: "Indoor Plants",
-    rating: 4.5,
-    reviews: 67,
-    inStock: true,
-    discount: 16,
-    addedDate: "2024-01-05",
-  },
-  {
-    id: "6",
-    title: "Aloe Vera",
-    price: 19.99,
-    originalPrice: 24.99,
-    image: "/placeholder.svg?height=200&width=200",
-    category: "Succulents",
-    rating: 4.8,
-    reviews: 203,
-    inStock: true,
-    discount: 20,
-    addedDate: "2024-01-03",
-  },
-];
+// Add these imports at the top
+import {
+  fetchWishlist,
+  removeFromWishlist,
+} from "@/redux/slices/wishlistSlice";
+import type { AppDispatch, RootState } from "@/redux/store";
+import { useDispatch, useSelector } from "react-redux";
 
 export default function WishlistPage() {
-  const [wishlistItems, setWishlistItems] = useState(mockWishlistItems);
+  const dispatch = useDispatch<AppDispatch>();
+  const { items: wishlistItems, loading } = useSelector(
+    (state: RootState) => state.wishlist
+  );
   const [searchTerm, setSearchTerm] = useState("");
-  const [filteredItems, setFilteredItems] = useState(mockWishlistItems);
 
   useEffect(() => {
-    const filtered = wishlistItems.filter((item) =>
-      item.title.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-    setFilteredItems(filtered);
-  }, [searchTerm, wishlistItems]);
+    dispatch(fetchWishlist());
+  }, [dispatch]);
 
-  const removeFromWishlist = (itemId: string) => {
-    setWishlistItems((prev) => prev.filter((item) => item.id !== itemId));
+  const filteredItems = wishlistItems.filter((item) =>
+    item?.productId?.title?.toLowerCase()?.includes(searchTerm.toLowerCase())
+  );
+
+  const removeFromWishlistHandler = (itemId: string) => {
+    dispatch(removeFromWishlist(itemId));
     toast.success("Item removed from wishlist");
   };
 
   const addToCart = (item: any) => {
-    if (!item.inStock) {
-      toast.error("Item is out of stock");
-      return;
-    }
-    toast.success(`${item.title} added to cart`);
+    toast.success(`${item.product.title} added to cart`);
   };
 
   const moveAllToCart = () => {
-    const inStockItems = filteredItems.filter((item) => item.inStock);
-    if (inStockItems.length === 0) {
-      toast.error("No items in stock to add to cart");
-      return;
-    }
-    toast.success(`${inStockItems.length} items added to cart`);
+    toast.success(`${filteredItems.length} items added to cart`);
   };
 
   const clearWishlist = () => {
-    setWishlistItems([]);
+    filteredItems.forEach((item) => {
+      dispatch(removeFromWishlist(item.productId._id));
+    });
     toast.success("Wishlist cleared");
   };
 
-  const totalValue = filteredItems.reduce((sum, item) => sum + item.price, 0);
-  const totalSavings = filteredItems.reduce(
-    (sum, item) => sum + (item.originalPrice - item.price),
+  const totalValue = filteredItems.reduce(
+    (sum, item) => sum + item.productId.price,
     0
   );
+  const totalSavings = filteredItems.reduce(
+    (sum, item) => sum + (item.productId.price - item.productId.price),
+    0
+  );
+
+  console.log("Wishlist Items:", filteredItems);
+
+  // Update the loading condition
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -254,23 +193,23 @@ export default function WishlistPage() {
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {filteredItems.map((item) => (
                   <Card
-                    key={item.id}
+                    key={item.productId._id}
                     className="group hover:shadow-lg transition-shadow"
                   >
                     <div className="relative">
                       <div className="aspect-square relative overflow-hidden rounded-t-lg">
                         <Image
-                          src={item.image || "/placeholder.svg"}
-                          alt={item.title}
+                          src={item.productId.image || "/placeholder.svg"}
+                          alt={item.productId.title}
                           fill
                           className="object-cover group-hover:scale-105 transition-transform duration-300"
                         />
-                        {item.discount > 0 && (
+                        {item.productId.discount > 0 && (
                           <Badge className="absolute top-2 left-2 bg-red-500 hover:bg-red-600">
-                            -{item.discount}%
+                            -{item.productId.discount}%
                           </Badge>
                         )}
-                        {!item.inStock && (
+                        {!item.productId.inStock && (
                           <Badge className="absolute top-2 right-2 bg-gray-500">
                             Out of Stock
                           </Badge>
@@ -279,7 +218,9 @@ export default function WishlistPage() {
                           variant="ghost"
                           size="sm"
                           className="absolute top-2 right-2 h-8 w-8 p-0 bg-white/80 hover:bg-white"
-                          onClick={() => removeFromWishlist(item.id)}
+                          onClick={() =>
+                            removeFromWishlistHandler(item.productId._id)
+                          }
                         >
                           <Trash2 className="h-4 w-4 text-red-500" />
                         </Button>
@@ -288,10 +229,10 @@ export default function WishlistPage() {
                     <CardContent className="p-4">
                       <div className="space-y-2">
                         <Badge variant="outline" className="text-xs">
-                          {item.category}
+                          {item.productId.category}
                         </Badge>
                         <h3 className="font-semibold text-lg leading-tight">
-                          {item.title}
+                          {item.productId.title}
                         </h3>
                         <div className="flex items-center space-x-1">
                           <div className="flex items-center">
@@ -299,7 +240,7 @@ export default function WishlistPage() {
                               <Star
                                 key={i}
                                 className={`h-3 w-3 ${
-                                  i < Math.floor(item.rating)
+                                  i < Math.floor(item.productId.rating)
                                     ? "text-yellow-400 fill-current"
                                     : "text-gray-300"
                                 }`}
@@ -307,21 +248,22 @@ export default function WishlistPage() {
                             ))}
                           </div>
                           <span className="text-sm text-muted-foreground">
-                            {item.rating} ({item.reviews})
+                            {item.productId.rating} ({item.productId.reviews})
                           </span>
                         </div>
                         <div className="flex items-center space-x-2">
                           <span className="text-xl font-bold text-green-600">
-                            ${item.price.toFixed(2)}
+                            ${item.productId.price.toFixed(2)}
                           </span>
-                          {item.originalPrice > item.price && (
+                          {item.productId.originalPrice >
+                            item.productId.price && (
                             <span className="text-sm text-muted-foreground line-through">
-                              ${item.originalPrice.toFixed(2)}
+                              ${item.productId.originalPrice.toFixed(2)}
                             </span>
                           )}
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          Added on {item.addedDate}
+                          Added on {item.addedAt}
                         </p>
                       </div>
                       <Separator className="my-4" />
@@ -329,12 +271,14 @@ export default function WishlistPage() {
                         <Button
                           className="flex-1"
                           onClick={() => addToCart(item)}
-                          disabled={!item.inStock}
+                          disabled={!item.productId.inStock}
                         >
                           <ShoppingCart className="h-4 w-4 mr-2" />
-                          {item.inStock ? "Add to Cart" : "Out of Stock"}
+                          {item.productId.inStock
+                            ? "Add to Cart"
+                            : "Out of Stock"}
                         </Button>
-                        <Link href={`/products/${item.id}`}>
+                        <Link href={`/products/${item.productId._id}`}>
                           <Button variant="outline" size="sm">
                             <Eye className="h-4 w-4" />
                           </Button>

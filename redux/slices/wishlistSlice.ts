@@ -3,12 +3,17 @@ import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 
 export interface WishlistItem {
   _id: string;
-  product: {
+  productId: {
     _id: string;
     title: string;
     price: number;
     image: string;
     category: string;
+    reviews: number;
+    rating: number;
+    inStock: boolean;
+    discount: number; // Assuming discount is a percentage
+    originalPrice: number; // Assuming original price is the price before discount
   };
   addedAt: string;
 }
@@ -30,7 +35,7 @@ export const fetchWishlist = createAsyncThunk(
   "wishlist/fetchWishlist",
   async () => {
     const response = await apiRequest("/wishlist");
-    return response.data;
+    return response;
   }
 );
 
@@ -42,7 +47,7 @@ export const addToWishlist = createAsyncThunk(
       method: "POST",
       body: JSON.stringify({ productId }),
     });
-    return response.data;
+    return response;
   }
 );
 
@@ -74,7 +79,7 @@ const wishlistSlice = createSlice({
       })
       .addCase(fetchWishlist.fulfilled, (state, action) => {
         state.loading = false;
-        state.items = action.payload.wishlist;
+        state.items = action.payload.data?.items || [];
       })
       .addCase(fetchWishlist.rejected, (state, action) => {
         state.loading = false;
@@ -82,13 +87,19 @@ const wishlistSlice = createSlice({
       })
       // Add to wishlist
       .addCase(addToWishlist.fulfilled, (state, action) => {
-        state.items.push(action.payload.wishlistItem);
+        state.items.push(action.payload.data?.items);
+      })
+      .addCase(addToWishlist.rejected, (state, action) => {
+        state.error = action.error.message || "Failed to add to wishlist";
       })
       // Remove from wishlist
       .addCase(removeFromWishlist.fulfilled, (state, action) => {
         state.items = state.items.filter(
-          (item) => item.product._id !== action.payload
+          (item) => item.productId._id !== action.payload
         );
+      })
+      .addCase(removeFromWishlist.rejected, (state, action) => {
+        state.error = action.error.message || "Failed to remove from wishlist";
       });
   },
 });
