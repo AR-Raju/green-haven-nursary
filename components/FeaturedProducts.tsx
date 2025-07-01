@@ -17,7 +17,7 @@ export default function FeaturedProducts() {
   );
 
   useEffect(() => {
-    dispatch(fetchProducts({ limit: 8, sort: "createdAt" }));
+    dispatch(fetchProducts({ sort: "createdAt" }));
   }, [dispatch]);
 
   if (loading) {
@@ -32,7 +32,7 @@ export default function FeaturedProducts() {
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[...Array(8)].map((_, i) => (
+            {[...Array(10)].map((_, i) => (
               <div key={i} className="space-y-4">
                 <Skeleton className="aspect-square rounded-lg" />
                 <Skeleton className="h-4 w-3/4" />
@@ -58,7 +58,7 @@ export default function FeaturedProducts() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-8">
-          {products?.slice(0, 8).map((product) => (
+          {products?.slice(0, 10).map((product) => (
             <ProductCard key={product._id} product={product} />
           ))}
         </div>

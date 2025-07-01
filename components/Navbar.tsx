@@ -68,7 +68,7 @@ export default function Navbar() {
   useEffect(() => {
     dispatch(loadUserFromStorage());
     dispatch(initializeCart());
-    dispatch(fetchCategories({ limit: 8 }));
+    dispatch(fetchCategories({}));
   }, [dispatch]);
 
   useEffect(() => {

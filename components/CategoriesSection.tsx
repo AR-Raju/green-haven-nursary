@@ -23,7 +23,7 @@ export default function CategoriesSection() {
   );
 
   useEffect(() => {
-    dispatch(fetchCategories({ limit: 100 })); // Fetch categories with a limit of 100
+    dispatch(fetchCategories({})); // Fetch categories with a limit of 100
   }, [dispatch]);
 
   if (loading) {

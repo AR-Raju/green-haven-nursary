@@ -76,7 +76,6 @@ export default function ProductsPage() {
   }, [dispatch]);
 
   const filteredProducts = products.filter((product) => {
-    console.log("Filtering product:", product);
     const matchesSearch =
       product.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       product.description.toLowerCase().includes(searchTerm.toLowerCase());

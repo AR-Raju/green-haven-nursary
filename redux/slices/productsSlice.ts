@@ -112,7 +112,7 @@ export const fetchProducts = createAsyncThunk(
       if (params.category) queryParams.append("category", params.category);
 
       const response = await apiRequest(`/products?${queryParams.toString()}`);
-      return response.data;
+      return response;
     } catch (error: any) {
       return rejectWithValue(error.message || "Failed to fetch products");
     }
@@ -218,10 +218,12 @@ const productsSlice = createSlice({
       .addCase(fetchProducts.fulfilled, (state, action) => {
         state.loading = false;
         if (action.payload) {
-          state.products = Array.isArray(action.payload) ? action.payload : [];
-          state.totalProducts = action.payload.totalProducts || 0;
-          state.currentPage = action.payload.currentPage || 1;
-          state.totalPages = action.payload.totalPages || 1;
+          state.products = Array.isArray(action.payload?.data)
+            ? action.payload.data
+            : [];
+          state.totalProducts = action.payload.pagination.total || 0;
+          state.currentPage = action.payload.pagination.page || 1;
+          state.totalPages = action.payload.pagination.totalPage || 1;
         }
       })
       .addCase(fetchProducts.rejected, (state, action) => {

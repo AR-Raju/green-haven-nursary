@@ -47,7 +47,7 @@ export default function ProductsPage() {
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   useEffect(() => {
-    dispatch(fetchCategories({ limit: 100 }));
+    dispatch(fetchCategories({}));
   }, [dispatch]);
 
   useEffect(() => {
@@ -262,7 +262,7 @@ export default function ProductsPage() {
 
             {/* Products Grid */}
             {loading ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2  xl:grid-cols-4 gap-6">
                 {Array.from({ length: 9 }).map((_, index) => (
                   <ProductCardSkeleton key={index} />
                 ))}
@@ -279,7 +279,7 @@ export default function ProductsPage() {
               </div>
             ) : (
               <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 mb-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2  xl:grid-cols-4 gap-6 mb-8">
                   {products.map((product) => (
                     <ProductCard key={product._id} product={product} />
                   ))}
