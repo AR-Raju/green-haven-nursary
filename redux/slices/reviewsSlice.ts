@@ -12,6 +12,8 @@ export interface Review {
   comment: string;
   status: "pending" | "approved" | "rejected";
   adminResponse?: string;
+  helpfulVotes?: number;
+  verifiedPurchase?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -46,7 +48,7 @@ export const createReview = createAsyncThunk(
       method: "POST",
       body: JSON.stringify(reviewData),
     });
-    return response.data;
+    return response;
   }
 );
 
@@ -68,7 +70,7 @@ export const fetchReviews = createAsyncThunk(
     if (params.limit) queryParams.append("limit", params.limit.toString());
 
     const response = await apiRequest(`/reviews?${queryParams.toString()}`);
-    return response.data;
+    return response;
   }
 );
 
@@ -88,7 +90,7 @@ export const updateReviewStatus = createAsyncThunk(
       method: "PATCH",
       body: JSON.stringify({ status, adminResponse }),
     });
-    return response.data;
+    return response;
   }
 );
 
@@ -109,7 +111,7 @@ const reviewsSlice = createSlice({
       })
       .addCase(createReview.fulfilled, (state, action) => {
         state.loading = false;
-        state.reviews.unshift(action.payload.review);
+        state.reviews.unshift(action.payload.data?.review);
       })
       .addCase(createReview.rejected, (state, action) => {
         state.loading = false;
@@ -122,10 +124,10 @@ const reviewsSlice = createSlice({
       })
       .addCase(fetchReviews.fulfilled, (state, action) => {
         state.loading = false;
-        state.reviews = action.payload.reviews;
-        state.totalReviews = action.payload.totalReviews;
-        state.currentPage = action.payload.currentPage;
-        state.totalPages = action.payload.totalPages;
+        state.reviews = action.payload.data || [];
+        state.totalReviews = action.payload.pagination?.total || 0;
+        state.currentPage = action.payload.pagination?.page || 1;
+        state.totalPages = action.payload.pagination?.totalPage || 1;
       })
       .addCase(fetchReviews.rejected, (state, action) => {
         state.loading = false;
@@ -134,11 +136,14 @@ const reviewsSlice = createSlice({
       // Update review status
       .addCase(updateReviewStatus.fulfilled, (state, action) => {
         const index = state.reviews.findIndex(
-          (review) => review._id === action.payload.review._id
+          (review) => review._id === action.payload.data?._id
         );
         if (index !== -1) {
-          state.reviews[index] = action.payload.review;
+          state.reviews[index] = action.payload?.data;
         }
+      })
+      .addCase(updateReviewStatus.rejected, (state, action) => {
+        state.error = action.error.message || "Failed to update review";
       });
   },
 });

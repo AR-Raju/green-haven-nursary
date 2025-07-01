@@ -15,6 +15,7 @@ import {
   fetchProduct,
 } from "@/redux/slices/productsSlice";
 import { fetchReviews } from "@/redux/slices/reviewsSlice";
+import { addToWishlist } from "@/redux/slices/wishlistSlice";
 import type { AppDispatch, RootState } from "@/redux/store";
 import {
   Heart,
@@ -84,6 +85,15 @@ export default function ProductDetailPage() {
     toast({
       title: "Added to Cart",
       description: `${quantity} ${product.title}(s) added to your cart.`,
+    });
+  };
+
+  const hanndleAddToWishlist = () => {
+    if (!product) return;
+    dispatch(addToWishlist(product._id));
+    toast({
+      title: "Added to Wishlist",
+      description: `${product.title} has been added to your wishlist.`,
     });
   };
 
@@ -158,7 +168,8 @@ export default function ProductDetailPage() {
   const images = product.image ? [product.image] : ["/placeholder.svg"];
   const averageRating =
     reviews?.length > 0
-      ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length
+      ? reviews.reduce((sum, review) => sum + review?.rating, 0) /
+        reviews?.length
       : 0;
 
   return (
@@ -206,7 +217,7 @@ export default function ProductDetailPage() {
           <div className="space-y-6">
             <div>
               <Badge variant="outline" className="mb-2">
-                {product.category.name}
+                {product.category?.name}
               </Badge>
               <h1 className="text-3xl font-bold mb-2">{product.title}</h1>
 
@@ -292,7 +303,11 @@ export default function ProductDetailPage() {
                   <ShoppingCart className="h-4 w-4 mr-2" />
                   {product.inStock ? "Add to Cart" : "Out of Stock"}
                 </Button>
-                <Button variant="outline" size="lg">
+                <Button
+                  onClick={hanndleAddToWishlist}
+                  variant="outline"
+                  size="lg"
+                >
                   <Heart className="h-4 w-4" />
                 </Button>
                 <Button variant="outline" size="lg" onClick={handleShare}>

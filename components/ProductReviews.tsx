@@ -18,6 +18,12 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  clearError,
+  createReview,
+  fetchReviews,
+} from "@/redux/slices/reviewsSlice";
+import type { AppDispatch, RootState } from "@/redux/store";
+import {
   Calendar,
   CheckCircle,
   MessageSquare,
@@ -26,29 +32,18 @@ import {
   User,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { toast } from "sonner";
-
-interface Review {
-  _id: string;
-  userId: string;
-  userName: string;
-  userEmail: string;
-  rating: number;
-  comment: string;
-  status: "pending" | "approved" | "rejected";
-  adminResponse?: string;
-  helpfulVotes: number;
-  verifiedPurchase: boolean;
-  createdAt: string;
-}
 
 interface ProductReviewsProps {
   productId: string;
 }
 
 export default function ProductReviews({ productId }: ProductReviewsProps) {
-  const [reviews, setReviews] = useState<Review[]>([]);
-  const [loading, setLoading] = useState(true);
+  const dispatch = useDispatch<AppDispatch>();
+  const { reviews, loading, error, totalReviews } = useSelector(
+    (state: RootState) => state.reviews
+  );
   const [user, setUser] = useState<any>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newReview, setNewReview] = useState({
@@ -57,74 +52,22 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
   });
   const [hoveredRating, setHoveredRating] = useState(0);
 
-  // Sample reviews data
-  const sampleReviews: Review[] = [
-    {
-      _id: "1",
-      userId: "user1",
-      userName: "Sarah Johnson",
-      userEmail: "sarah@example.com",
-      rating: 5,
-      comment:
-        "Absolutely love this plant! It arrived in perfect condition and has been thriving in my living room. The packaging was excellent and the care instructions were very helpful.",
-      status: "approved",
-      helpfulVotes: 12,
-      verifiedPurchase: true,
-      createdAt: "2024-01-15T10:00:00Z",
-    },
-    {
-      _id: "2",
-      userId: "user2",
-      userName: "Mike Chen",
-      userEmail: "mike@example.com",
-      rating: 4,
-      comment:
-        "Great quality plant and fast shipping. Only giving 4 stars because it was slightly smaller than expected, but overall very happy with the purchase.",
-      status: "approved",
-      helpfulVotes: 8,
-      verifiedPurchase: true,
-      createdAt: "2024-01-12T14:30:00Z",
-    },
-    {
-      _id: "3",
-      userId: "user3",
-      userName: "Emma Davis",
-      userEmail: "emma@example.com",
-      rating: 5,
-      comment:
-        "Perfect addition to my plant collection! Healthy, beautiful, and exactly as described. Will definitely order again.",
-      status: "approved",
-      helpfulVotes: 15,
-      verifiedPurchase: true,
-      createdAt: "2024-01-10T09:15:00Z",
-    },
-    {
-      _id: "4",
-      userId: "user4",
-      userName: "David Wilson",
-      userEmail: "david@example.com",
-      rating: 3,
-      comment:
-        "The plant is okay, but it took longer to arrive than expected and had some minor damage to the leaves. Customer service was helpful though.",
-      status: "approved",
-      helpfulVotes: 3,
-      verifiedPurchase: true,
-      createdAt: "2024-01-08T16:45:00Z",
-    },
-  ];
-
   useEffect(() => {
     const userData = localStorage.getItem("user");
     if (userData) {
       setUser(JSON.parse(userData));
     }
 
-    // Simulate API call
-    setTimeout(() => {
-      setReviews(sampleReviews);
-      setLoading(false);
-    }, 1000);
-  }, [productId]);
+    // Fetch reviews for this product
+    dispatch(fetchReviews({ productId, status: "approved" }));
+  }, [dispatch, productId]);
+
+  useEffect(() => {
+    if (error) {
+      toast.error(error);
+      dispatch(clearError());
+    }
+  }, [error, dispatch]);
 
   const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -145,40 +88,35 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
     }
 
     try {
-      // Simulate API call
-      const review: Review = {
-        _id: Date.now().toString(),
-        userId: user.email,
-        userName: user.name,
-        userEmail: user.email,
-        rating: newReview.rating,
-        comment: newReview.comment,
-        status: "pending",
-        helpfulVotes: 0,
-        verifiedPurchase: true,
-        createdAt: new Date().toISOString(),
-      };
+      await dispatch(
+        createReview({
+          productId,
+          rating: newReview.rating,
+          comment: newReview.comment,
+        })
+      ).unwrap();
 
-      setReviews([review, ...reviews]);
       setNewReview({ rating: 0, comment: "" });
       setIsDialogOpen(false);
       toast.success(
         "Review submitted successfully! It will be visible after moderation."
       );
-    } catch (error) {
-      toast.error("Failed to submit review");
+
+      // Refresh reviews
+      dispatch(fetchReviews({ productId, status: "approved" }));
+    } catch (error: any) {
+      toast.error(error.message || "Failed to submit review");
     }
   };
 
-  const handleHelpfulVote = (reviewId: string) => {
-    setReviews(
-      reviews.map((review) =>
-        review._id === reviewId
-          ? { ...review, helpfulVotes: review.helpfulVotes + 1 }
-          : review
-      )
-    );
-    toast.success("Thank you for your feedback!");
+  const handleHelpfulVote = async (reviewId: string) => {
+    try {
+      // This would be implemented as a separate API call
+      // For now, we'll just show a success message
+      toast.success("Thank you for your feedback!");
+    } catch (error) {
+      toast.error("Failed to record your vote");
+    }
   };
 
   const renderStars = (
@@ -298,7 +236,9 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
                     >
                       Cancel
                     </Button>
-                    <Button type="submit">Submit Review</Button>
+                    <Button type="submit" disabled={loading}>
+                      {loading ? "Submitting..." : "Submit Review"}
+                    </Button>
                   </div>
                 </form>
               </DialogContent>
@@ -369,13 +309,15 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
                 <div className="flex items-start space-x-4">
                   <Avatar className="h-10 w-10">
                     <AvatarImage src="/placeholder.svg?height=40&width=40" />
-                    <AvatarFallback>{review.userName.charAt(0)}</AvatarFallback>
+                    <AvatarFallback>
+                      {review.user.name.charAt(0)}
+                    </AvatarFallback>
                   </Avatar>
                   <div className="flex-1">
                     <div className="flex items-center justify-between mb-2">
                       <div>
                         <div className="flex items-center space-x-2">
-                          <h4 className="font-medium">{review.userName}</h4>
+                          <h4 className="font-medium">{review.user.name}</h4>
                           {review.verifiedPurchase && (
                             <Badge variant="outline" className="text-xs">
                               <CheckCircle className="h-3 w-3 mr-1" />
@@ -415,7 +357,7 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
                         className="text-gray-600 hover:text-gray-900"
                       >
                         <ThumbsUp className="h-4 w-4 mr-2" />
-                        Helpful ({review.helpfulVotes})
+                        Helpful ({review.helpfulVotes || 0})
                       </Button>
                     </div>
                   </div>
