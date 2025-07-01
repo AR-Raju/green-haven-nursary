@@ -62,31 +62,25 @@ import {
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
-interface BlogPost {
-  _id: string;
-  title: string;
-  slug: string;
-  content: string;
-  excerpt: string;
-  category: string;
-  tags: string[];
-  featuredImage: string;
-  authorId: string;
-  authorName: string;
-  status: "draft" | "published" | "archived";
-  views: number;
-  publishedAt?: string;
-  createdAt: string;
-  updatedAt: string;
-}
+// Add these imports at the top
+import type { BlogPost } from "@/redux/slices/blogSlice";
+import {
+  createBlogPost,
+  deleteBlogPost,
+  fetchBlogPosts,
+  updateBlogPost,
+} from "@/redux/slices/blogSlice";
+import type { AppDispatch, RootState } from "@/redux/store";
+import { useDispatch, useSelector } from "react-redux";
 
+// Replace the useEffect and state management with Redux integration
 export default function BlogPage() {
-  const [posts, setPosts] = useState<BlogPost[]>([]);
-  const [loading, setLoading] = useState(true);
+  const dispatch = useDispatch<AppDispatch>();
+  const { posts, loading } = useSelector((state: RootState) => state.blog);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingPost, setEditingPost] = useState<BlogPost | null>(null);
+  const [editingPost, setEditingPost] = useState<any>(null);
   const [user, setUser] = useState<any>(null);
 
   const [formData, setFormData] = useState({
@@ -117,24 +111,12 @@ export default function BlogPage() {
     if (userData) {
       setUser(JSON.parse(userData));
     }
-    fetchPosts();
-  }, [statusFilter]);
-
-  const fetchPosts = async () => {
-    try {
-      const params = new URLSearchParams();
-      if (statusFilter !== "all") params.append("status", statusFilter);
-
-      const response = await fetch(`/api/blog?${params}`);
-      const data = await response.json();
-      setPosts(data.posts || []);
-    } catch (error) {
-      console.error("Error fetching blog posts:", error);
-      toast.error("Failed to fetch blog posts");
-    } finally {
-      setLoading(false);
-    }
-  };
+    dispatch(
+      fetchBlogPosts({
+        status: statusFilter !== "all" ? statusFilter : undefined,
+      })
+    );
+  }, [dispatch, statusFilter]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -145,48 +127,39 @@ export default function BlogPage() {
     }
 
     try {
-      const url = editingPost ? `/api/blog/${editingPost.slug}` : "/api/blog";
-      const method = editingPost ? "PUT" : "POST";
-
       const payload = {
         ...formData,
         tags: formData.tags
           .split(",")
           .map((tag) => tag.trim())
           .filter((tag) => tag),
-        authorId: user.email,
-        authorName: user.name,
       };
 
-      const response = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (response.ok) {
-        toast.success(
-          editingPost
-            ? "Blog post updated successfully"
-            : "Blog post created successfully"
-        );
-        setIsDialogOpen(false);
-        setEditingPost(null);
-        setFormData({
-          title: "",
-          content: "",
-          excerpt: "",
-          category: "",
-          tags: "",
-          featuredImage: "",
-          status: "draft",
-        });
-        fetchPosts();
+      if (editingPost) {
+        await dispatch(
+          updateBlogPost({
+            slug: editingPost.slug,
+            postData: payload,
+          })
+        ).unwrap();
+        toast.success("Blog post updated successfully");
       } else {
-        throw new Error("Failed to save blog post");
+        await dispatch(createBlogPost(payload)).unwrap();
+        toast.success("Blog post created successfully");
       }
+
+      setIsDialogOpen(false);
+      setEditingPost(null);
+      setFormData({
+        title: "",
+        content: "",
+        excerpt: "",
+        category: "",
+        tags: "",
+        featuredImage: "",
+        status: "draft",
+      });
     } catch (error) {
-      console.error("Error saving blog post:", error);
       toast.error("Failed to save blog post");
     }
   };
@@ -207,18 +180,9 @@ export default function BlogPage() {
 
   const handleDelete = async (slug: string) => {
     try {
-      const response = await fetch(`/api/blog/${slug}`, {
-        method: "DELETE",
-      });
-
-      if (response.ok) {
-        toast.success("Blog post deleted successfully");
-        fetchPosts();
-      } else {
-        throw new Error("Failed to delete blog post");
-      }
+      await dispatch(deleteBlogPost(slug)).unwrap();
+      toast.success("Blog post deleted successfully");
     } catch (error) {
-      console.error("Error deleting blog post:", error);
       toast.error("Failed to delete blog post");
     }
   };
@@ -241,6 +205,7 @@ export default function BlogPage() {
     }
   };
 
+  // Update the loading condition
   if (loading) {
     return (
       <DashboardLayout>
@@ -454,7 +419,7 @@ export default function BlogPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {posts.reduce((sum, p) => sum + p.views, 0)}
+                {posts.reduce((sum, p) => sum + (p?.views ?? 0), 0)}
               </div>
             </CardContent>
           </Card>
@@ -530,7 +495,7 @@ export default function BlogPage() {
                       <TableCell>
                         <div className="flex items-center space-x-2">
                           <User className="h-4 w-4" />
-                          <span>{post.authorName}</span>
+                          <span>{post?.author?.name}</span>
                         </div>
                       </TableCell>
                       <TableCell>{getStatusBadge(post.status)}</TableCell>

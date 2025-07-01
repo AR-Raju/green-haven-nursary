@@ -29,6 +29,7 @@ import {
   Star,
   Users,
 } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
   Area,
@@ -386,21 +387,21 @@ export default function DashboardPage() {
                     variant="outline"
                   >
                     <Package className="mr-2 h-4 w-4" />
-                    Add New Product
+                    <Link href="/dashboard/products"> Add New Product </Link>
                   </Button>
                   <Button
                     className="w-full justify-start bg-transparent"
                     variant="outline"
                   >
                     <Users className="mr-2 h-4 w-4" />
-                    Manage Users
+                    <Link href="/dashboard/users">Manage Users</Link>
                   </Button>
                   <Button
                     className="w-full justify-start bg-transparent"
                     variant="outline"
                   >
                     <ShoppingCart className="mr-2 h-4 w-4" />
-                    View All Orders
+                    <Link href="/dashboard/orders">View All Orders</Link>
                   </Button>
                 </>
               ) : (

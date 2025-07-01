@@ -23,6 +23,16 @@ export interface AnalyticsData {
     status: string;
     count: number;
   }>;
+  customersByMonth: Array<{
+    month: string;
+    customers: number;
+  }>;
+  topCategories: Array<{
+    _id: string;
+    name: string;
+    totalSales: number;
+    revenue: number;
+  }>;
 }
 
 interface AnalyticsState {
@@ -38,13 +48,13 @@ const initialState: AnalyticsState = {
 };
 
 // Get analytics dashboard
-export const fetchAnalytics = createAsyncThunk<
-  any, // Replace 'any' with a more specific return type if known
-  number | undefined
->("analytics/fetchAnalytics", async (period = 30) => {
-  const response = await apiRequest(`/analytics?period=${period}`);
-  return response.data;
-});
+export const fetchAnalytics = createAsyncThunk(
+  "analytics/fetchAnalytics",
+  async (period: number = 30) => {
+    const response = await apiRequest(`/analytics?period=${period}`);
+    return response;
+  }
+);
 
 const analyticsSlice = createSlice({
   name: "analytics",
@@ -62,7 +72,7 @@ const analyticsSlice = createSlice({
       })
       .addCase(fetchAnalytics.fulfilled, (state, action) => {
         state.loading = false;
-        state.data = action.payload.analytics;
+        state.data = action.payload.data?.analytics;
       })
       .addCase(fetchAnalytics.rejected, (state, action) => {
         state.loading = false;

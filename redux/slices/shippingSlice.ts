@@ -43,7 +43,7 @@ export const createShippingZone = createAsyncThunk(
       method: "POST",
       body: JSON.stringify(zoneData),
     });
-    return response.data;
+    return response;
   }
 );
 
@@ -52,7 +52,30 @@ export const fetchShippingZones = createAsyncThunk(
   "shipping/fetchShippingZones",
   async () => {
     const response = await apiRequest("/shipping/zones");
-    return response.data;
+    return response;
+  }
+);
+
+// Update shipping zone
+export const updateShippingZone = createAsyncThunk(
+  "shipping/updateShippingZone",
+  async ({ zoneId, zoneData }: { zoneId: string; zoneData: any }) => {
+    const response = await apiRequest(`/shipping/zones/${zoneId}`, {
+      method: "PUT",
+      body: JSON.stringify(zoneData),
+    });
+    return response;
+  }
+);
+
+// Delete shipping zone
+export const deleteShippingZone = createAsyncThunk(
+  "shipping/deleteShippingZone",
+  async (zoneId: string) => {
+    await apiRequest(`/shipping/zones/${zoneId}`, {
+      method: "DELETE",
+    });
+    return zoneId;
   }
 );
 
@@ -71,7 +94,7 @@ export const createShippingMethod = createAsyncThunk(
       method: "POST",
       body: JSON.stringify(methodData),
     });
-    return response.data;
+    return response;
   }
 );
 
@@ -81,7 +104,30 @@ export const fetchShippingMethods = createAsyncThunk(
   async (zoneId?: string) => {
     const queryParams = zoneId ? `?zoneId=${zoneId}` : "";
     const response = await apiRequest(`/shipping/methods${queryParams}`);
-    return response.data;
+    return response;
+  }
+);
+
+// Update shipping method
+export const updateShippingMethod = createAsyncThunk(
+  "shipping/updateShippingMethod",
+  async ({ methodId, methodData }: { methodId: string; methodData: any }) => {
+    const response = await apiRequest(`/shipping/methods/${methodId}`, {
+      method: "PUT",
+      body: JSON.stringify(methodData),
+    });
+    return response;
+  }
+);
+
+// Delete shipping method
+export const deleteShippingMethod = createAsyncThunk(
+  "shipping/deleteShippingMethod",
+  async (methodId: string) => {
+    await apiRequest(`/shipping/methods/${methodId}`, {
+      method: "DELETE",
+    });
+    return methodId;
   }
 );
 
@@ -97,7 +143,10 @@ const shippingSlice = createSlice({
     builder
       // Create shipping zone
       .addCase(createShippingZone.fulfilled, (state, action) => {
-        state.zones.push(action.payload.zone);
+        state.zones.push(action.payload.data?.zone);
+      })
+      .addCase(createShippingZone.rejected, (state, action) => {
+        state.error = action.error.message || "Failed to create shipping zone";
       })
       // Fetch shipping zones
       .addCase(fetchShippingZones.pending, (state) => {
@@ -106,19 +155,55 @@ const shippingSlice = createSlice({
       })
       .addCase(fetchShippingZones.fulfilled, (state, action) => {
         state.loading = false;
-        state.zones = action.payload.zones;
+        state.zones = action.payload.data?.zones || [];
       })
       .addCase(fetchShippingZones.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message || "Failed to fetch shipping zones";
       })
+      // Update shipping zone
+      .addCase(updateShippingZone.fulfilled, (state, action) => {
+        const index = state.zones.findIndex(
+          (zone) => zone._id === action.payload.data?.zone._id
+        );
+        if (index !== -1) {
+          state.zones[index] = action.payload.data?.zone;
+        }
+      })
+      // Delete shipping zone
+      .addCase(deleteShippingZone.fulfilled, (state, action) => {
+        state.zones = state.zones.filter((zone) => zone._id !== action.payload);
+      })
       // Create shipping method
       .addCase(createShippingMethod.fulfilled, (state, action) => {
-        state.methods.push(action.payload.method);
+        state.methods.push(action.payload.data?.method);
+      })
+      .addCase(createShippingMethod.rejected, (state, action) => {
+        state.error =
+          action.error.message || "Failed to create shipping method";
       })
       // Fetch shipping methods
       .addCase(fetchShippingMethods.fulfilled, (state, action) => {
-        state.methods = action.payload.methods;
+        state.methods = action.payload.data?.methods || [];
+      })
+      .addCase(fetchShippingMethods.rejected, (state, action) => {
+        state.error =
+          action.error.message || "Failed to fetch shipping methods";
+      })
+      // Update shipping method
+      .addCase(updateShippingMethod.fulfilled, (state, action) => {
+        const index = state.methods.findIndex(
+          (method) => method._id === action.payload.data?.method._id
+        );
+        if (index !== -1) {
+          state.methods[index] = action.payload.data?.method;
+        }
+      })
+      // Delete shipping method
+      .addCase(deleteShippingMethod.fulfilled, (state, action) => {
+        state.methods = state.methods.filter(
+          (method) => method._id !== action.payload
+        );
       });
   },
 });

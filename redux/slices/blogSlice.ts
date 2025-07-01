@@ -15,6 +15,7 @@ export interface BlogPost {
     name: string;
   };
   status: "draft" | "published";
+  views?: number;
   publishedAt?: string;
   createdAt: string;
   updatedAt: string;
@@ -56,7 +57,7 @@ export const createBlogPost = createAsyncThunk(
       method: "POST",
       body: JSON.stringify(postData),
     });
-    return response.data;
+    return response;
   }
 );
 
@@ -78,7 +79,7 @@ export const fetchBlogPosts = createAsyncThunk(
     if (params.limit) queryParams.append("limit", params.limit.toString());
 
     const response = await apiRequest(`/blog?${queryParams.toString()}`);
-    return response.data;
+    return response;
   }
 );
 
@@ -87,7 +88,30 @@ export const fetchBlogPost = createAsyncThunk(
   "blog/fetchBlogPost",
   async (slug: string) => {
     const response = await apiRequest(`/blog/${slug}`);
-    return response.data;
+    return response;
+  }
+);
+
+// Update blog post
+export const updateBlogPost = createAsyncThunk(
+  "blog/updateBlogPost",
+  async ({ slug, postData }: { slug: string; postData: any }) => {
+    const response = await apiRequest(`/blog/${slug}`, {
+      method: "PUT",
+      body: JSON.stringify(postData),
+    });
+    return response;
+  }
+);
+
+// Delete blog post
+export const deleteBlogPost = createAsyncThunk(
+  "blog/deleteBlogPost",
+  async (slug: string) => {
+    await apiRequest(`/blog/${slug}`, {
+      method: "DELETE",
+    });
+    return slug;
   }
 );
 
@@ -111,7 +135,7 @@ const blogSlice = createSlice({
       })
       .addCase(createBlogPost.fulfilled, (state, action) => {
         state.loading = false;
-        state.posts.unshift(action.payload.post);
+        state.posts.unshift(action.payload.data?.post);
       })
       .addCase(createBlogPost.rejected, (state, action) => {
         state.loading = false;
@@ -124,10 +148,10 @@ const blogSlice = createSlice({
       })
       .addCase(fetchBlogPosts.fulfilled, (state, action) => {
         state.loading = false;
-        state.posts = action.payload.posts;
-        state.totalPosts = action.payload.totalPosts;
-        state.currentPage = action.payload.currentPage;
-        state.totalPages = action.payload.totalPages;
+        state.posts = action.payload.data?.posts || [];
+        state.totalPosts = action.payload.data?.totalPosts || 0;
+        state.currentPage = action.payload.data?.currentPage || 1;
+        state.totalPages = action.payload.data?.totalPages || 1;
       })
       .addCase(fetchBlogPosts.rejected, (state, action) => {
         state.loading = false;
@@ -135,7 +159,25 @@ const blogSlice = createSlice({
       })
       // Fetch single blog post
       .addCase(fetchBlogPost.fulfilled, (state, action) => {
-        state.currentPost = action.payload.post;
+        state.currentPost = action.payload.data?.post;
+      })
+      .addCase(fetchBlogPost.rejected, (state, action) => {
+        state.error = action.error.message || "Failed to fetch blog post";
+      })
+      // Update blog post
+      .addCase(updateBlogPost.fulfilled, (state, action) => {
+        const index = state.posts.findIndex(
+          (post) => post._id === action.payload.data?.post._id
+        );
+        if (index !== -1) {
+          state.posts[index] = action.payload.data?.post;
+        }
+      })
+      // Delete blog post
+      .addCase(deleteBlogPost.fulfilled, (state, action) => {
+        state.posts = state.posts.filter(
+          (post) => post.slug !== action.payload
+        );
       });
   },
 });
